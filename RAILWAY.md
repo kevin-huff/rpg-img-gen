@@ -104,6 +104,23 @@ To update your app:
 2. Railway auto-deploys from main branch
 3. Zero-downtime deployments
 
+## 🚨 Troubleshooting
+
+### Build Issues
+If you encounter Nixpacks build errors:
+
+1. **Remove nixpacks.toml** (let Railway auto-detect)
+2. **Use Dockerfile instead**: Railway will automatically detect and use the Dockerfile
+3. **Check logs** in Railway Dashboard for specific errors
+
+### Common Issues:
+- **Nixpacks errors**: Railway's Node.js auto-detection usually works better
+- **Build timeouts**: Increase build timeout in Railway settings
+- **Memory issues**: Upgrade Railway plan if needed
+
+### Alternative Deployment:
+If Nixpacks fails, Railway will automatically fall back to the included Dockerfile.
+
 ---
 
 Your magical RPG generator is now ready for the cloud! ✨🚂
