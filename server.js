@@ -25,6 +25,13 @@ const templateRoutes = require('./routes/templates');
 const imageRoutes = require('./routes/images');
 
 const app = express();
+
+// Trust proxy for Railway (fixes session cookies and rate limiting)
+if (process.env.NODE_ENV === 'production' || process.env.RAILWAY_ENVIRONMENT) {
+  app.set('trust proxy', 1);
+  console.log('✅ Trust proxy enabled for Railway');
+}
+
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
@@ -112,13 +119,14 @@ if (process.env.NODE_ENV === 'production') {
 
 app.use(session(sessionConfig));
 
+// Remove debugging middleware after fixing the issue
 // Debug middleware for session tracking (only in production for now)
-if (process.env.NODE_ENV === 'production') {
-  app.use((req, res, next) => {
-    console.log(`📊 ${req.method} ${req.path} - Session ID: ${req.sessionID} - User: ${req.session?.user?.username || 'None'}`);
-    next();
-  });
-}
+// if (process.env.NODE_ENV === 'production') {
+//   app.use((req, res, next) => {
+//     console.log(`📊 ${req.method} ${req.path} - Session ID: ${req.sessionID} - User: ${req.session?.user?.username || 'None'}`);
+//     next();
+//   });
+// }
 
 // Static file serving
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

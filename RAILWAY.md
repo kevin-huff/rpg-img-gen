@@ -132,10 +132,10 @@ If login doesn't work on Railway:
    - Sessions persist across deployments
 
 4. **401 Errors After Login:**
-   - Check Railway logs for session debugging information
-   - Verify session cookies are being sent with requests
-   - May need to clear browser cookies and try again
-   - Session store initialization logs will show if SQLite setup succeeded
+   - **FIXED**: Added `trust proxy` setting for Railway
+   - Sessions now persist properly across requests
+   - Each request uses the same session instead of creating new ones
+   - Rate limiting also works correctly with Railway's proxy
 
 ### Build Issues
 If you encounter npm/build errors:
@@ -157,7 +157,7 @@ If you encounter npm/build errors:
 
 ### Common Issues:
 - **Login fails**: Check environment variables and CORS settings
-- **401 errors after login**: Session cookies not persisting - check Railway logs for session debugging
+- **401 errors after login**: **FIXED** - Added trust proxy setting for Railway
 - **"getBaseUrl is not defined" error**: Fixed with proper utility functions
 - **"Network Error" or localhost calls**: Frontend now auto-detects environment
 - **"Missing from lock file" error**: Run `npm install` locally and commit package-lock.json

@@ -12,6 +12,8 @@ const loginLimiter = rateLimit({
   message: { error: 'Too many login attempts, please try again later' },
   standardHeaders: true,
   legacyHeaders: false,
+  // Handle Railway proxy properly
+  trustProxy: process.env.NODE_ENV === 'production' || process.env.RAILWAY_ENVIRONMENT,
 });
 
 // Validation schema
@@ -35,14 +37,8 @@ router.post('/login', loginLimiter, async (req, res) => {
       return res.status(401).json({ error: 'Invalid username or password' });
     }
     
-    console.log('Login successful for user:', user.username);
-    console.log('Session before setting user:', req.session);
-    
     // Set session
     req.session.user = user;
-    
-    console.log('Session after setting user:', req.session);
-    console.log('Session ID:', req.sessionID);
     
     // Force session save
     req.session.save((err) => {
@@ -51,7 +47,6 @@ router.post('/login', loginLimiter, async (req, res) => {
         return res.status(500).json({ error: 'Session save failed' });
       }
       
-      console.log('Session saved successfully');
       res.json({ 
         message: 'Login successful',
         user: { username: user.username }
