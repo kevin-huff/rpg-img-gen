@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RPG Image Overlay</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: transparent;
+            overflow: hidden;
+            font-family: 'Arial', sans-serif;
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+        
+        .overlay-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .image-container {
+            position: relative;
+            max-width: 100%;
+            max-height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .image-display {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            border-radius: 12px;
+            position: relative;
+            z-index: 2;
+            transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 0;
+            transform: scale(0.8) rotate(5deg);
+            filter: blur(10px) brightness(0.7);
+        }
+        
+        .image-display.visible {
+            opacity: 1;
+            transform: scale(1) rotate(0deg);
+            filter: blur(0px) brightness(1);
+        }
+        
+        /* Magical particle effects */
+        .image-display::before {
+            content: '';
+            position: absolute;
+            top: -20px;
+            left: -20px;
+            right: -20px;
+            bottom: -20px;
+            background: linear-gradient(45deg, 
+                rgba(255, 215, 0, 0.3), 
+                rgba(138, 43, 226, 0.3), 
+                rgba(0, 191, 255, 0.3), 
+                rgba(255, 20, 147, 0.3));
+            border-radius: 20px;
+            z-index: 1;
+            opacity: 0;
+            animation: magical-aura 3s ease-in-out infinite;
+            filter: blur(15px);
+        }
+        
+        .image-display.visible::before {
+            opacity: 1;
+        }
+        
+        /* Sparkle effects */
+        .sparkle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: radial-gradient(circle, #fff 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 3;
+        }
+        
+        .sparkle::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 2px;
+            height: 8px;
+            background: linear-gradient(to bottom, rgba(255,255,255,0.8), transparent);
+            transform: translate(-50%, -50%);
+        }
+        
+        .sparkle::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 8px;
+            height: 2px;
+            background: linear-gradient(to right, rgba(255,255,255,0.8), transparent);
+            transform: translate(-50%, -50%);
+        }
+        
+        /* Magic circle behind image */
+        .magic-circle {
+            position: absolute;
+            width: 120%;
+            height: 120%;
+            border: 2px solid rgba(255, 215, 0, 0.4);
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 0;
+            opacity: 0;
+            transition: all 0.8s ease;
+        }
+        
+        .magic-circle.active {
+            opacity: 1;
+            animation: rotate-magic 8s linear infinite, pulse-magic 2s ease-in-out infinite;
+        }
+        
+        .magic-circle::before {
+            content: '';
+            position: absolute;
+            top: -4px;
+            left: -4px;
+            right: -4px;
+            bottom: -4px;
+            border: 1px solid rgba(138, 43, 226, 0.3);
+            border-radius: 50%;
+            animation: rotate-magic-reverse 12s linear infinite;
+        }
+        
+        .status-indicator {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            display: none;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .status-indicator.connected {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.9), rgba(16, 185, 129, 0.9));
+            display: block;
+            box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
+        }
+        
+        .status-indicator.disconnected {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.9), rgba(220, 38, 38, 0.9));
+            display: block;
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+        }
+        
+        .no-image-message {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 18px;
+            text-align: center;
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.7), rgba(30, 30, 50, 0.7));
+            padding: 30px;
+            border-radius: 15px;
+            display: none;
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 255, 255, 0.2);
+            border-left: 4px solid #ffffff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite, glow-pulse 2s ease-in-out infinite;
+        }
+        
+        .fade-transition {
+            transition: opacity 0.6s ease-in-out;
+        }
+        
+        /* Animations */
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @keyframes magical-aura {
+            0%, 100% { 
+                opacity: 0.3;
+                transform: scale(1);
+            }
+            50% { 
+                opacity: 0.6;
+                transform: scale(1.05);
+            }
+        }
+        
+        @keyframes rotate-magic {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+        
+        @keyframes rotate-magic-reverse {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(-360deg); }
+        }
+        
+        @keyframes pulse-magic {
+            0%, 100% { 
+                border-color: rgba(255, 215, 0, 0.4);
+                box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
+            }
+            33% { 
+                border-color: rgba(138, 43, 226, 0.4);
+                box-shadow: 0 0 25px rgba(138, 43, 226, 0.3);
+            }
+            66% { 
+                border-color: rgba(0, 191, 255, 0.4);
+                box-shadow: 0 0 25px rgba(0, 191, 255, 0.3);
+            }
+        }
+        
+        @keyframes sparkle-twinkle {
+            0%, 100% { 
+                opacity: 0;
+                transform: scale(0) rotate(0deg);
+            }
+            50% { 
+                opacity: 1;
+                transform: scale(1) rotate(180deg);
+            }
+        }
+        
+        @keyframes glow-pulse {
+            0%, 100% { 
+                box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+            }
+            50% { 
+                box-shadow: 0 0 30px rgba(255, 255, 255, 0.6);
+            }
+        }
+        
+        /* Floating particles */
+        .floating-particle {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: radial-gradient(circle, rgba(255,255,255,0.8) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="overlay-container">
+        <div class="image-container">
+            <div class="magic-circle"></div>
+            <img id="mainImage" class="image-display" alt="RPG Generated Image" style="display: none;">
+        </div>
+        <div id="noImageMessage" class="no-image-message">
+            <div class="loading-spinner"></div>
+            <p style="margin-top: 20px;">Awaiting magical imagery...</p>
+        </div>
+        <div id="statusIndicator" class="status-indicator">
+            Connecting to the arcane network...
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        class OverlayManager {
+            constructor() {
+                this.socket = null;
+                this.currentImage = null;
+                this.isConnected = false;
+                this.particles = [];
+                this.sparkles = [];
+                
+                // DOM elements
+                this.imageElement = document.getElementById('mainImage');
+                this.noImageMessage = document.getElementById('noImageMessage');
+                this.statusIndicator = document.getElementById('statusIndicator');
+                this.magicCircle = document.querySelector('.magic-circle');
+                this.imageContainer = document.querySelector('.image-container');
+                
+                this.init();
+            }
+            
+            init() {
+                this.connectSocket();
+                this.loadCurrentImage();
+                this.showNoImageMessage();
+                this.startFloatingParticles();
+            }
+            
+            connectSocket() {
+                try {
+                    this.socket = io();
+                    
+                    this.socket.on('connect', () => {
+                        console.log('Connected to the arcane network');
+                        this.isConnected = true;
+                        this.updateStatus('connected', '✨ Arcane Network Connected');
+                        this.socket.emit('join-overlay');
+                        
+                        // Hide status indicator after 3 seconds
+                        setTimeout(() => {
+                            this.hideStatus();
+                        }, 3000);
+                    });
+                    
+                    this.socket.on('disconnect', () => {
+                        console.log('Disconnected from arcane network');
+                        this.isConnected = false;
+                        this.updateStatus('disconnected', '⚡ Network Disrupted');
+                    });
+                    
+                    this.socket.on('image-update', (imageData) => {
+                        console.log('Received magical imagery:', imageData);
+                        this.displayImageWithMagic(imageData);
+                    });
+                    
+                    this.socket.on('connect_error', (error) => {
+                        console.error('Arcane connection error:', error);
+                        this.updateStatus('disconnected', '🔥 Connection Severed');
+                    });
+                    
+                } catch (error) {
+                    console.error('Failed to initialize arcane socket:', error);
+                    this.updateStatus('disconnected', '💀 Connection Failed');
+                }
+            }
+            
+            async loadCurrentImage() {
+                try {
+                    const response = await fetch('/api/images/active');
+                    if (response.ok) {
+                        const imageData = await response.json();
+                        if (imageData && imageData.url) {
+                            this.displayImageWithMagic(imageData, false); // No animation on initial load
+                        }
+                    }
+                } catch (error) {
+                    console.error('Failed to load current magical imagery:', error);
+                }
+            }
+            
+            displayImageWithMagic(imageData, animate = true) {
+                if (!imageData || !imageData.url) {
+                    this.showNoImageMessage();
+                    return;
+                }
+                
+                if (animate) {
+                    // Create magical transition effect
+                    this.createSparkleEffect();
+                    this.createMagicalBurst();
+                }
+                
+                // Preload the image
+                const img = new Image();
+                img.onload = () => {
+                    this.hideNoImageMessage();
+                    
+                    if (animate && this.currentImage) {
+                        // Fade out current image
+                        this.imageElement.classList.remove('visible');
+                        this.magicCircle.classList.remove('active');
+                        
+                        setTimeout(() => {
+                            this.loadNewImage(imageData.url);
+                        }, 400);
+                    } else {
+                        this.loadNewImage(imageData.url);
+                    }
+                    
+                    this.currentImage = imageData;
+                    console.log('Magical imagery manifested:', imageData.url);
+                };
+                
+                img.onerror = () => {
+                    console.error('Failed to manifest imagery:', imageData.url);
+                    this.showNoImageMessage();
+                };
+                
+                img.src = imageData.url;
+            }
+            
+            loadNewImage(url) {
+                this.imageElement.src = url;
+                this.imageElement.style.display = 'block';
+                
+                // Trigger magical entrance
+                setTimeout(() => {
+                    this.imageElement.classList.add('visible');
+                    this.magicCircle.classList.add('active');
+                }, 50);
+            }
+            
+            createSparkleEffect() {
+                const sparkleCount = 12;
+                const container = this.imageContainer;
+                
+                for (let i = 0; i < sparkleCount; i++) {
+                    setTimeout(() => {
+                        const sparkle = document.createElement('div');
+                        sparkle.className = 'sparkle';
+                        
+                        // Random position around the image area
+                        const angle = (i / sparkleCount) * Math.PI * 2;
+                        const radius = 100 + Math.random() * 50;
+                        const x = Math.cos(angle) * radius;
+                        const y = Math.sin(angle) * radius;
+                        
+                        sparkle.style.left = `calc(50% + ${x}px)`;
+                        sparkle.style.top = `calc(50% + ${y}px)`;
+                        sparkle.style.animation = `sparkle-twinkle 1.5s ease-out`;
+                        
+                        container.appendChild(sparkle);
+                        
+                        // Remove sparkle after animation
+                        setTimeout(() => {
+                            if (sparkle.parentNode) {
+                                sparkle.parentNode.removeChild(sparkle);
+                            }
+                        }, 1500);
+                    }, i * 100);
+                }
+            }
+            
+            createMagicalBurst() {
+                const burstCount = 8;
+                const container = this.imageContainer;
+                
+                for (let i = 0; i < burstCount; i++) {
+                    const particle = document.createElement('div');
+                    particle.className = 'floating-particle';
+                    
+                    const angle = (i / burstCount) * Math.PI * 2;
+                    const startRadius = 20;
+                    const endRadius = 150;
+                    
+                    const startX = Math.cos(angle) * startRadius;
+                    const startY = Math.sin(angle) * startRadius;
+                    const endX = Math.cos(angle) * endRadius;
+                    const endY = Math.sin(angle) * endRadius;
+                    
+                    particle.style.left = `calc(50% + ${startX}px)`;
+                    particle.style.top = `calc(50% + ${startY}px)`;
+                    particle.style.transition = 'all 1s ease-out';
+                    particle.style.opacity = '1';
+                    
+                    container.appendChild(particle);
+                    
+                    // Animate particle outward
+                    setTimeout(() => {
+                        particle.style.left = `calc(50% + ${endX}px)`;
+                        particle.style.top = `calc(50% + ${endY}px)`;
+                        particle.style.opacity = '0';
+                        particle.style.transform = 'scale(0)';
+                    }, 50);
+                    
+                    // Remove particle after animation
+                    setTimeout(() => {
+                        if (particle.parentNode) {
+                            particle.parentNode.removeChild(particle);
+                        }
+                    }, 1100);
+                }
+            }
+            
+            startFloatingParticles() {
+                setInterval(() => {
+                    if (this.particles.length < 5) {
+                        this.createFloatingParticle();
+                    }
+                }, 2000);
+            }
+            
+            createFloatingParticle() {
+                const particle = document.createElement('div');
+                particle.className = 'floating-particle';
+                
+                // Random starting position
+                const startX = Math.random() * window.innerWidth;
+                const startY = window.innerHeight + 20;
+                const endY = -20;
+                const driftX = (Math.random() - 0.5) * 100;
+                
+                particle.style.left = startX + 'px';
+                particle.style.top = startY + 'px';
+                particle.style.opacity = '0.6';
+                particle.style.transition = 'all 8s linear';
+                
+                document.body.appendChild(particle);
+                this.particles.push(particle);
+                
+                // Animate upward drift
+                setTimeout(() => {
+                    particle.style.top = endY + 'px';
+                    particle.style.left = (startX + driftX) + 'px';
+                    particle.style.opacity = '0';
+                }, 100);
+                
+                // Remove particle after animation
+                setTimeout(() => {
+                    if (particle.parentNode) {
+                        particle.parentNode.removeChild(particle);
+                    }
+                    this.particles = this.particles.filter(p => p !== particle);
+                }, 8200);
+            }
+            
+            showNoImageMessage() {
+                this.imageElement.classList.remove('visible');
+                this.magicCircle.classList.remove('active');
+                setTimeout(() => {
+                    this.imageElement.style.display = 'none';
+                    this.noImageMessage.style.display = 'block';
+                }, 400);
+            }
+            
+            hideNoImageMessage() {
+                this.noImageMessage.style.display = 'none';
+            }
+            
+            updateStatus(type, message) {
+                this.statusIndicator.className = `status-indicator ${type}`;
+                this.statusIndicator.textContent = message;
+            }
+            
+            hideStatus() {
+                if (this.isConnected) {
+                    this.statusIndicator.style.display = 'none';
+                }
+            }
+        }
+        
+        // Initialize the magical overlay when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            window.overlayManager = new OverlayManager();
+        });
+        
+        // Handle page visibility changes
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && window.overlayManager) {
+                // Reload current image when page becomes visible
+                window.overlayManager.loadCurrentImage();
+            }
+        });
+    </script>
+</body>
+</html>

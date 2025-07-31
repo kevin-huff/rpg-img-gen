@@ -1,0 +1,12 @@
+# Nixpacks configuration for Railway
+[phases.setup]
+nixPkgs = ["nodejs", "npm"]
+
+[phases.install]
+cmds = ["npm install", "cd frontend && npm install"]
+
+[phases.build]
+cmds = ["npm run frontend:build"]
+
+[phases.start]
+cmd = "npm start"

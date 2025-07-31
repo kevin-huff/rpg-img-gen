@@ -1,0 +1,59 @@
+# Railway ignore file - excludes files from deployment
+
+# Development files
+.env
+.env.local
+.env.development
+.env.test
+
+# Node modules (rebuilt during deployment)
+node_modules/
+frontend/node_modules/
+
+# Development directories
+.vscode/
+.idea/
+
+# Git
+.git/
+.gitignore
+
+# Local database and uploads (use persistent volume instead)
+db/rpg.sqlite
+uploads/
+
+# Frontend development files
+frontend/src/
+frontend/public/
+frontend/.eslintrc.cjs
+frontend/vite.config.js
+
+# Keep only built frontend
+!frontend/dist/
+
+# Documentation (optional, remove if you want to include)
+docs/
+*.md
+!RAILWAY.md
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Runtime data
+pids/
+*.pid
+*.seed
+
+# Coverage directory used by tools like istanbul
+coverage/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
