@@ -7,6 +7,15 @@ const session = require('express-session');
 const path = require('path');
 require('dotenv').config();
 
+// Production-ready session store
+let SessionStore;
+if (process.env.NODE_ENV === 'production') {
+  const SQLiteStore = require('connect-sqlite3')(session);
+  SessionStore = SQLiteStore;
+} else {
+  SessionStore = session.MemoryStore;
+}
+
 const { initializeDatabase } = require('./db/database');
 const { initializeAuth, requireAuth } = require('./middleware/auth');
 const authRoutes = require('./routes/auth');
@@ -31,26 +40,40 @@ app.use(helmet({
 
 // Dynamic CORS for Railway
 const allowedOrigins = [
-  process.env.CORS_ORIGIN || "http://localhost:5173",
-  'https://*.railway.app',
-  /.*\.railway\.app$/
+  process.env.CORS_ORIGIN || "http://localhost:5173"
 ];
 
+// Add Railway domains
 if (process.env.RAILWAY_STATIC_URL) {
   allowedOrigins.push(process.env.RAILWAY_STATIC_URL);
 }
 
+// Add common Railway patterns
+if (process.env.NODE_ENV === 'production') {
+  allowedOrigins.push(/https:\/\/.*\.railway\.app$/);
+  allowedOrigins.push(/https:\/\/.*\.up\.railway\.app$/);
+}
+
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (mobile apps, etc.)
+    // Allow requests with no origin (mobile apps, Postman, etc.)
     if (!origin) return callback(null, true);
     
-    if (allowedOrigins.some(allowed => 
-      typeof allowed === 'string' ? allowed === origin : allowed.test(origin)
-    )) {
+    // Check if origin matches allowed patterns
+    const isAllowed = allowedOrigins.some(allowed => {
+      if (typeof allowed === 'string') {
+        return allowed === origin;
+      } else if (allowed instanceof RegExp) {
+        return allowed.test(origin);
+      }
+      return false;
+    });
+    
+    if (isAllowed) {
       return callback(null, true);
     }
     
+    console.log('CORS blocked origin:', origin);
     callback(new Error('Not allowed by CORS'));
   },
   credentials: true // Enable cookies for sessions
@@ -58,8 +81,8 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Session middleware
-app.use(session({
+// Session middleware with production-ready store
+const sessionConfig = {
   secret: process.env.SESSION_SECRET || 'dev-secret-change-in-production',
   resave: false,
   saveUninitialized: false,
@@ -68,7 +91,17 @@ app.use(session({
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000 // 24 hours
   }
-}));
+};
+
+// Use SQLite session store in production
+if (process.env.NODE_ENV === 'production') {
+  sessionConfig.store = new SessionStore({
+    db: 'sessions.db',
+    dir: process.env.RAILWAY_ENVIRONMENT ? '/app/data' : './db'
+  });
+}
+
+app.use(session(sessionConfig));
 
 // Static file serving
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -138,6 +171,25 @@ app.use('*', (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 
+// Graceful shutdown handling
+process.on('SIGTERM', () => {
+  console.log('Received SIGTERM, shutting down gracefully...');
+  server.close(() => {
+    console.log('Server closed');
+    if (process.env.NODE_ENV === 'production') {
+      process.exit(0);
+    }
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('Received SIGINT, shutting down gracefully...');
+  server.close(() => {
+    console.log('Server closed');
+    process.exit(0);
+  });
+});
+
 // Initialize database and start server
 async function startServer() {
   try {
@@ -145,12 +197,22 @@ async function startServer() {
     await initializeAuth();
     console.log('Database and authentication initialized successfully');
     
-    server.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT}`);
-      console.log(`📱 API available at http://localhost:${PORT}/api`);
-      console.log(`🎥 OBS Overlay at http://localhost:${PORT}/overlay`);
-      console.log(`📁 Uploads served at http://localhost:${PORT}/uploads`);
+    const serverInstance = server.listen(PORT, '0.0.0.0', () => {
+      const actualPort = serverInstance.address().port;
+      console.log(`🚀 Server running on port ${actualPort}`);
+      
+      // Railway-aware URLs
+      if (process.env.RAILWAY_STATIC_URL || process.env.RAILWAY_ENVIRONMENT) {
+        console.log(`🌐 App URL: ${process.env.RAILWAY_STATIC_URL || 'https://your-app.railway.app'}`);
+        console.log(`🎥 OBS Overlay: ${process.env.RAILWAY_STATIC_URL || 'https://your-app.railway.app'}/overlay`);
+      } else {
+        console.log(`📱 API available at http://localhost:${actualPort}/api`);
+        console.log(`🎥 OBS Overlay at http://localhost:${actualPort}/overlay`);
+        console.log(`📁 Uploads served at http://localhost:${actualPort}/uploads`);
+      }
+      
       console.log(`🔐 Authentication enabled`);
+      console.log(`💾 Environment: ${process.env.NODE_ENV || 'development'}`);
     });
   } catch (error) {
     console.error('Failed to start server:', error);

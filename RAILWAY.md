@@ -17,13 +17,17 @@ Set these in Railway Dashboard → Variables:
 
 ```bash
 NODE_ENV=production
-DB_PATH=/app/data/rpg.sqlite
-UPLOAD_DIR=/app/data/uploads
 CORS_ORIGIN=https://your-app-name.railway.app
 SESSION_SECRET=your-long-random-secret-here
 ADMIN_USERNAME=admin
 ADMIN_PASSWORD=your-secure-password
 ```
+
+**Important Notes:**
+- **Don't set** `DB_PATH` or `UPLOAD_DIR` - Railway auto-configures these
+- Replace `your-app-name` with your actual Railway subdomain
+- Use a strong, random `SESSION_SECRET` (at least 32 characters)
+- Choose a secure `ADMIN_PASSWORD`
 
 ### 4. Persistent Storage
 Railway will automatically create persistent volumes for:
@@ -106,6 +110,22 @@ To update your app:
 
 ## 🚨 Troubleshooting
 
+### Login Issues
+If login doesn't work on Railway:
+
+1. **Check Environment Variables:**
+   - Ensure `NODE_ENV=production`
+   - Verify `SESSION_SECRET` is set and long (32+ characters)
+   - Confirm `ADMIN_USERNAME` and `ADMIN_PASSWORD` are set
+
+2. **Check CORS Configuration:**
+   - Set `CORS_ORIGIN` to your exact Railway URL
+   - Example: `CORS_ORIGIN=https://rpg-generator-production.up.railway.app`
+
+3. **Session Store Issues:**
+   - App now uses SQLite sessions in production (fixed memory leak)
+   - Sessions persist across deployments
+
 ### Build Issues
 If you encounter Nixpacks build errors:
 
@@ -114,9 +134,12 @@ If you encounter Nixpacks build errors:
 3. **Check logs** in Railway Dashboard for specific errors
 
 ### Common Issues:
+- **Login fails**: Check environment variables and CORS settings
+- **Memory warnings**: Fixed with SQLite session store
+- **Port issues**: Server now binds to `0.0.0.0` for Railway
+- **SIGTERM errors**: Added graceful shutdown handling
 - **Nixpacks errors**: Railway's Node.js auto-detection usually works better
 - **Build timeouts**: Increase build timeout in Railway settings
-- **Memory issues**: Upgrade Railway plan if needed
 
 ### Alternative Deployment:
 If Nixpacks fails, Railway will automatically fall back to the included Dockerfile.
