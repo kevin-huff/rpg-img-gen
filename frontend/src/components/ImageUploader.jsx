@@ -6,6 +6,10 @@ import io from 'socket.io-client'
 import { imagesAPI } from '../services/api'
 
 export default function ImageUploader() {
+  // Environment-aware base URL helper
+  const getBaseUrl = () => {
+    return import.meta.env.PROD ? window.location.origin : 'http://localhost:3000'
+  }
   const [images, setImages] = useState([])
   const [activeImage, setActiveImage] = useState(null)
   const [isUploading, setIsUploading] = useState(false)
@@ -26,7 +30,12 @@ export default function ImageUploader() {
   }, [])
 
   const initializeSocket = () => {
-    socketRef.current = io('http://localhost:3000')
+    // Environment-aware Socket.IO connection
+    const socketUrl = import.meta.env.PROD 
+      ? window.location.origin  // Use same origin in production
+      : 'http://localhost:3000'  // Use localhost in development
+    
+    socketRef.current = io(socketUrl)
     
     socketRef.current.on('connect', () => {
       console.log('Connected to server')
@@ -199,7 +208,7 @@ export default function ImageUploader() {
               <p className="text-sm text-blue-700 mt-1">
                 Add a Browser Source in OBS with URL: 
                 <span className="font-mono bg-white px-2 py-1 rounded ml-1">
-                  http://localhost:3000/overlay
+                  {getBaseUrl()}/overlay
                 </span>
               </p>
               <p className="text-xs text-blue-600 mt-1">
@@ -219,7 +228,7 @@ export default function ImageUploader() {
           </h3>
           <div className="flex items-start space-x-4">
             <img
-              src={`http://localhost:3000${activeImage.url}`}
+              src={`${getBaseUrl()}${activeImage.url}`}
               alt={activeImage.original_name}
               className="w-32 h-32 object-cover rounded-lg"
             />
@@ -257,7 +266,7 @@ export default function ImageUploader() {
                 }`}
               >
                 <img
-                  src={`http://localhost:3000${image.url}`}
+                  src={`${getBaseUrl()}${image.url}`}
                   alt={image.original_name}
                   className="w-full h-32 object-cover"
                 />

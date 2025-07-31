@@ -1,6 +1,9 @@
 import axios from 'axios'
 
-const API_BASE_URL = 'http://localhost:3000/api'
+// Environment-aware API base URL
+const API_BASE_URL = import.meta.env.PROD 
+  ? '/api'  // Use relative path in production (served from same domain)
+  : 'http://localhost:3000/api'  // Use localhost in development
 
 const api = axios.create({
   baseURL: API_BASE_URL,

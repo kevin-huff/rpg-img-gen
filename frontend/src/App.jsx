@@ -56,12 +56,12 @@ function AppContent() {
               <span className="text-sm text-gray-500">
                 OBS Overlay: 
                 <a 
-                  href="http://localhost:3000/overlay" 
+                  href={`${getBaseUrl()}/overlay`}
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="ml-1 text-blue-600 hover:text-blue-800"
                 >
-                  localhost:3000/overlay
+                  {getBaseUrl()}/overlay
                 </a>
               </span>
               <button
@@ -111,7 +111,11 @@ function AppContent() {
   )
 }
 
+// Add helper function at the top of the component
 function App() {
+  const getBaseUrl = () => {
+    return import.meta.env.PROD ? window.location.origin : 'http://localhost:3000'
+  }
   return (
     <AuthProvider>
       <AppContent />
