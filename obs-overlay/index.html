@@ -290,6 +290,20 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
+        // Utility function to get the correct base URL for images
+        function getImageUrl(relativePath) {
+            // If it's already a full URL, return as-is
+            if (relativePath.startsWith('http://') || relativePath.startsWith('https://')) {
+                return relativePath;
+            }
+            
+            // Remove leading slash if present
+            const cleanPath = relativePath.startsWith('/') ? relativePath.substring(1) : relativePath;
+            
+            // Get the current origin (works in both development and production)
+            return `${window.location.origin}/${cleanPath}`;
+        }
+        
         class OverlayManager {
             constructor() {
                 this.socket = null;
@@ -373,13 +387,17 @@
                     return;
                 }
                 
+                // Create full URL for the image
+                const fullImageUrl = getImageUrl(imageData.url);
+                console.log('Loading image from:', fullImageUrl);
+                
                 if (animate) {
                     // Create magical transition effect
                     this.createSparkleEffect();
                     this.createMagicalBurst();
                 }
                 
-                // Preload the image
+                // Preload the image with full URL
                 const img = new Image();
                 img.onload = () => {
                     this.hideNoImageMessage();
@@ -390,22 +408,22 @@
                         this.magicCircle.classList.remove('active');
                         
                         setTimeout(() => {
-                            this.loadNewImage(imageData.url);
+                            this.loadNewImage(fullImageUrl);
                         }, 400);
                     } else {
-                        this.loadNewImage(imageData.url);
+                        this.loadNewImage(fullImageUrl);
                     }
                     
                     this.currentImage = imageData;
-                    console.log('Magical imagery manifested:', imageData.url);
+                    console.log('Magical imagery manifested:', fullImageUrl);
                 };
                 
                 img.onerror = () => {
-                    console.error('Failed to manifest imagery:', imageData.url);
+                    console.error('Failed to manifest imagery:', fullImageUrl);
                     this.showNoImageMessage();
                 };
                 
-                img.src = imageData.url;
+                img.src = fullImageUrl;
             }
             
             loadNewImage(url) {

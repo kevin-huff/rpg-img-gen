@@ -137,6 +137,11 @@ If login doesn't work on Railway:
    - Each request uses the same session instead of creating new ones
    - Rate limiting also works correctly with Railway's proxy
 
+5. **Images Not Loading (404 errors for /uploads/):**
+   - **FIXED**: Static file serving now uses Railway-aware upload directory
+   - Server correctly serves files from `/app/data/uploads` in production
+   - Both overlay and image gallery now load images properly
+
 ### Build Issues
 If you encounter npm/build errors:
 
@@ -158,6 +163,7 @@ If you encounter npm/build errors:
 ### Common Issues:
 - **Login fails**: Check environment variables and CORS settings
 - **401 errors after login**: **FIXED** - Added trust proxy setting for Railway
+- **Images not loading**: **FIXED** - Static file serving now uses correct Railway upload directory
 - **"getBaseUrl is not defined" error**: Fixed with proper utility functions
 - **"Network Error" or localhost calls**: Frontend now auto-detects environment
 - **"Missing from lock file" error**: Run `npm install` locally and commit package-lock.json

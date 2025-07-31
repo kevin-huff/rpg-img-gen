@@ -128,8 +128,18 @@ app.use(session(sessionConfig));
 //   });
 // }
 
+// Railway-aware upload directory configuration
+let uploadDir = process.env.UPLOAD_DIR || './uploads';
+
+// For Railway, ensure we use the persistent volume
+if (process.env.RAILWAY_ENVIRONMENT) {
+  uploadDir = '/app/data/uploads';
+} else if (process.env.NODE_ENV === 'production' && !process.env.UPLOAD_DIR) {
+  uploadDir = '/app/data/uploads';
+}
+
 // Static file serving
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(uploadDir));
 app.use('/overlay', express.static(path.join(__dirname, 'obs-overlay')));
 
 // Serve built frontend in production
@@ -230,10 +240,12 @@ async function startServer() {
       if (process.env.RAILWAY_STATIC_URL || process.env.RAILWAY_ENVIRONMENT) {
         console.log(`🌐 App URL: ${process.env.RAILWAY_STATIC_URL || 'https://your-app.railway.app'}`);
         console.log(`🎥 OBS Overlay: ${process.env.RAILWAY_STATIC_URL || 'https://your-app.railway.app'}/overlay`);
+        console.log(`📁 Uploads directory: ${uploadDir}`);
       } else {
         console.log(`📱 API available at http://localhost:${actualPort}/api`);
         console.log(`🎥 OBS Overlay at http://localhost:${actualPort}/overlay`);
         console.log(`📁 Uploads served at http://localhost:${actualPort}/uploads`);
+        console.log(`📁 Upload directory: ${uploadDir}`);
       }
       
       console.log(`🔐 Authentication enabled`);
