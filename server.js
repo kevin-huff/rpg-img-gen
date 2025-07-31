@@ -86,22 +86,39 @@ const sessionConfig = {
   secret: process.env.SESSION_SECRET || 'dev-secret-change-in-production',
   resave: false,
   saveUninitialized: false,
+  name: 'rpg.sid', // Custom session name
   cookie: {
     secure: process.env.NODE_ENV === 'production', // HTTPS only in production
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'lax' // Allow cross-site requests
   }
 };
 
 // Use SQLite session store in production
 if (process.env.NODE_ENV === 'production') {
-  sessionConfig.store = new SessionStore({
-    db: 'sessions.db',
-    dir: process.env.RAILWAY_ENVIRONMENT ? '/app/data' : './db'
-  });
+  try {
+    sessionConfig.store = new SessionStore({
+      db: 'sessions.db',
+      dir: process.env.RAILWAY_ENVIRONMENT ? '/app/data' : './db',
+      table: 'sessions'
+    });
+    console.log('✅ SQLite session store initialized');
+  } catch (error) {
+    console.error('❌ Failed to initialize SQLite session store:', error);
+    console.log('📝 Falling back to memory store (not recommended for production)');
+  }
 }
 
 app.use(session(sessionConfig));
+
+// Debug middleware for session tracking (only in production for now)
+if (process.env.NODE_ENV === 'production') {
+  app.use((req, res, next) => {
+    console.log(`📊 ${req.method} ${req.path} - Session ID: ${req.sessionID} - User: ${req.session?.user?.username || 'None'}`);
+    next();
+  });
+}
 
 // Static file serving
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

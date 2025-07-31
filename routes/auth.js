@@ -35,12 +35,27 @@ router.post('/login', loginLimiter, async (req, res) => {
       return res.status(401).json({ error: 'Invalid username or password' });
     }
     
+    console.log('Login successful for user:', user.username);
+    console.log('Session before setting user:', req.session);
+    
     // Set session
     req.session.user = user;
     
-    res.json({ 
-      message: 'Login successful',
-      user: { username: user.username }
+    console.log('Session after setting user:', req.session);
+    console.log('Session ID:', req.sessionID);
+    
+    // Force session save
+    req.session.save((err) => {
+      if (err) {
+        console.error('Session save error:', err);
+        return res.status(500).json({ error: 'Session save failed' });
+      }
+      
+      console.log('Session saved successfully');
+      res.json({ 
+        message: 'Login successful',
+        user: { username: user.username }
+      });
     });
   } catch (err) {
     console.error('Login error:', err);

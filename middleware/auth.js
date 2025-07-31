@@ -36,10 +36,15 @@ async function authenticateUser(username, password) {
 
 // Middleware to check if user is authenticated
 function requireAuth(req, res, next) {
+  console.log('Auth check - Session exists:', !!req.session);
+  console.log('Auth check - User in session:', !!req.session?.user);
+  console.log('Auth check - Session ID:', req.sessionID);
+  
   if (req.session && req.session.user) {
     return next();
   }
   
+  console.log('Auth failed - returning 401');
   return res.status(401).json({ error: 'Authentication required' });
 }
 

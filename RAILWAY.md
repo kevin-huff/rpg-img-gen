@@ -131,6 +131,12 @@ If login doesn't work on Railway:
    - App now uses SQLite sessions in production (fixed memory leak)
    - Sessions persist across deployments
 
+4. **401 Errors After Login:**
+   - Check Railway logs for session debugging information
+   - Verify session cookies are being sent with requests
+   - May need to clear browser cookies and try again
+   - Session store initialization logs will show if SQLite setup succeeded
+
 ### Build Issues
 If you encounter npm/build errors:
 
@@ -151,6 +157,7 @@ If you encounter npm/build errors:
 
 ### Common Issues:
 - **Login fails**: Check environment variables and CORS settings
+- **401 errors after login**: Session cookies not persisting - check Railway logs for session debugging
 - **"getBaseUrl is not defined" error**: Fixed with proper utility functions
 - **"Network Error" or localhost calls**: Frontend now auto-detects environment
 - **"Missing from lock file" error**: Run `npm install` locally and commit package-lock.json
