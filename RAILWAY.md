@@ -127,14 +127,27 @@ If login doesn't work on Railway:
    - Sessions persist across deployments
 
 ### Build Issues
-If you encounter Nixpacks build errors:
+If you encounter npm/build errors:
 
-1. **Remove nixpacks.toml** (let Railway auto-detect)
-2. **Use Dockerfile instead**: Railway will automatically detect and use the Dockerfile
-3. **Check logs** in Railway Dashboard for specific errors
+1. **Package Lock Issues:**
+   - Ensure `package-lock.json` is committed to your repository
+   - Run `npm install` locally to update lock file before pushing
+   - Railway uses `npm install` (not `npm ci`) to handle lock file updates
+
+2. **Missing Dependencies:**
+   - If you see "Missing from lock file" errors, run `npm install` locally
+   - Commit the updated `package-lock.json`
+   - Push changes to trigger new Railway build
+
+3. **Nixpacks Issues:**
+   - **Remove nixpacks.toml** (let Railway auto-detect)
+   - **Use Dockerfile instead**: Railway will automatically detect and use the Dockerfile
+   - **Check logs** in Railway Dashboard for specific errors
 
 ### Common Issues:
 - **Login fails**: Check environment variables and CORS settings
+- **"Missing from lock file" error**: Run `npm install` locally and commit package-lock.json
+- **npm ci fails**: Railway now uses `npm install` for better lock file handling
 - **Memory warnings**: Fixed with SQLite session store
 - **Port issues**: Server now binds to `0.0.0.0` for Railway
 - **SIGTERM errors**: Added graceful shutdown handling
