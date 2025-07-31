@@ -42,7 +42,12 @@ Railway will automatically create persistent volumes for:
 ### 6. Build Configuration
 Railway uses the included:
 - `railway.json` - Build and deploy config
-- `nixpacks.toml` - Build environment config
+- Frontend automatically detects production environment
+- API calls use relative URLs in production
+
+**Note:** The frontend automatically switches between:
+- Development: `http://localhost:3000/api` 
+- Production: `/api` (relative to your Railway domain)
 
 ## 🔧 What's Configured for Railway
 
@@ -146,6 +151,8 @@ If you encounter npm/build errors:
 
 ### Common Issues:
 - **Login fails**: Check environment variables and CORS settings
+- **"getBaseUrl is not defined" error**: Fixed with proper utility functions
+- **"Network Error" or localhost calls**: Frontend now auto-detects environment
 - **"Missing from lock file" error**: Run `npm install` locally and commit package-lock.json
 - **npm ci fails**: Railway now uses `npm install` for better lock file handling
 - **Memory warnings**: Fixed with SQLite session store

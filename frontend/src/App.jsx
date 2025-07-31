@@ -3,6 +3,7 @@ import { Toaster } from 'react-hot-toast'
 import { FileImage, PenTool, Upload, Users, MapPin, LogOut } from 'lucide-react'
 
 import { AuthProvider, useAuth } from './contexts/AuthContext'
+import { getBaseUrl } from './utils/environment'
 import Login from './components/Login'
 import TemplateGenerator from './components/TemplateGenerator'
 import ImageUploader from './components/ImageUploader'
@@ -113,9 +114,6 @@ function AppContent() {
 
 // Add helper function at the top of the component
 function App() {
-  const getBaseUrl = () => {
-    return import.meta.env.PROD ? window.location.origin : 'http://localhost:3000'
-  }
   return (
     <AuthProvider>
       <AppContent />

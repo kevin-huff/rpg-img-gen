@@ -4,12 +4,9 @@ import { Upload, Image as ImageIcon, Trash2, Eye, Monitor } from 'lucide-react'
 import io from 'socket.io-client'
 
 import { imagesAPI } from '../services/api'
+import { getBaseUrl, getSocketUrl } from '../utils/environment'
 
 export default function ImageUploader() {
-  // Environment-aware base URL helper
-  const getBaseUrl = () => {
-    return import.meta.env.PROD ? window.location.origin : 'http://localhost:3000'
-  }
   const [images, setImages] = useState([])
   const [activeImage, setActiveImage] = useState(null)
   const [isUploading, setIsUploading] = useState(false)
@@ -31,9 +28,7 @@ export default function ImageUploader() {
 
   const initializeSocket = () => {
     // Environment-aware Socket.IO connection
-    const socketUrl = import.meta.env.PROD 
-      ? window.location.origin  // Use same origin in production
-      : 'http://localhost:3000'  // Use localhost in development
+    const socketUrl = getSocketUrl()
     
     socketRef.current = io(socketUrl)
     
