@@ -67,6 +67,8 @@ export const imagesAPI = {
     },
   }),
   activate: (id) => api.put(`/images/${id}/activate`),
+  hide: () => api.put('/images/hide'),
+  setCaption: (caption) => api.put('/images/caption', { caption }),
   delete: (id) => api.delete(`/images/${id}`),
 }
 

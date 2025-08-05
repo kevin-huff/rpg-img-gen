@@ -191,6 +191,27 @@
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
         }
         
+        /* Caption styling */
+        .image-caption {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.9), rgba(30, 30, 50, 0.9));
+            color: white;
+            padding: 12px 24px;
+            border-radius: 12px;
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            font-size: 16px;
+            font-weight: 500;
+            max-width: 80%;
+            text-align: center;
+            display: none;
+            z-index: 10;
+        }
+        
         .loading-spinner {
             width: 50px;
             height: 50px;
@@ -283,10 +304,10 @@
         <div class="image-container">
             <div class="magic-circle"></div>
             <img id="mainImage" class="image-display" alt="RPG Generated Image" style="display: none;">
+            <div id="imageCaption" class="image-caption"></div>
         </div>
-        <div id="noImageMessage" class="no-image-message">
-            <div class="loading-spinner"></div>
-            <p style="margin-top: 20px;">Awaiting magical imagery...</p>
+        <div id="noImageMessage" class="no-image-message" style="display: none;">
+            <!-- Empty - no loading message -->
         </div>
         <div id="statusIndicator" class="status-indicator">
             Connecting to the arcane network...
@@ -323,6 +344,7 @@
                 this.statusIndicator = document.getElementById('statusIndicator');
                 this.magicCircle = document.querySelector('.magic-circle');
                 this.imageContainer = document.querySelector('.image-container');
+                this.captionElement = document.getElementById('imageCaption');
                 
                 this.init();
             }
@@ -330,7 +352,6 @@
             init() {
                 this.connectSocket();
                 this.loadCurrentImage();
-                this.showNoImageMessage();
                 this.startFloatingParticles();
             }
             
@@ -361,6 +382,11 @@
                         this.displayImageWithMagic(imageData);
                     });
                     
+                    this.socket.on('caption-update', (captionData) => {
+                        console.log('Received caption update:', captionData);
+                        this.updateCaption(captionData.caption);
+                    });
+                    
                     this.socket.on('connect_error', (error) => {
                         console.error('Arcane connection error:', error);
                         this.updateStatus('disconnected', '🔥 Connection Severed');
@@ -388,7 +414,13 @@
             
             displayImageWithMagic(imageData, animate = true) {
                 if (!imageData || !imageData.url) {
-                    this.showNoImageMessage();
+                    this.hideNoImageMessage(); // Don't show any message when hidden
+                    this.imageElement.classList.remove('visible');
+                    this.magicCircle.classList.remove('active');
+                    this.captionElement.style.display = 'none';
+                    setTimeout(() => {
+                        this.imageElement.style.display = 'none';
+                    }, 400);
                     return;
                 }
                 
@@ -425,10 +457,19 @@
                 
                 img.onerror = () => {
                     console.error('Failed to manifest imagery:', fullImageUrl);
-                    this.showNoImageMessage();
+                    // Don't show any error message
                 };
                 
                 img.src = fullImageUrl;
+            }
+            
+            updateCaption(caption) {
+                if (caption && caption.trim()) {
+                    this.captionElement.textContent = caption.trim();
+                    this.captionElement.style.display = 'block';
+                } else {
+                    this.captionElement.style.display = 'none';
+                }
             }
             
             loadNewImage(url) {
@@ -557,15 +598,17 @@
             }
             
             showNoImageMessage() {
+                // No longer shows any message - just clean state
                 this.imageElement.classList.remove('visible');
                 this.magicCircle.classList.remove('active');
+                this.captionElement.style.display = 'none';
                 setTimeout(() => {
                     this.imageElement.style.display = 'none';
-                    this.noImageMessage.style.display = 'block';
                 }, 400);
             }
             
             hideNoImageMessage() {
+                // Just hide the message element
                 this.noImageMessage.style.display = 'none';
             }
             

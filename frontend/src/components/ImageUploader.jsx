@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import toast from 'react-hot-toast'
-import { Upload, Image as ImageIcon, Trash2, Eye, Monitor } from 'lucide-react'
+import { Upload, Image as ImageIcon, Trash2, Eye, Monitor, EyeOff, MessageSquare, RefreshCw } from 'lucide-react'
 import io from 'socket.io-client'
 
 import { imagesAPI } from '../services/api'
@@ -11,6 +11,8 @@ export default function ImageUploader() {
   const [activeImage, setActiveImage] = useState(null)
   const [isUploading, setIsUploading] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
+  const [caption, setCaption] = useState('')
+  const [isSettingCaption, setIsSettingCaption] = useState(false)
   const fileInputRef = useRef(null)
   const socketRef = useRef(null)
 
@@ -111,6 +113,48 @@ export default function ImageUploader() {
     }
   }
 
+  const hideImage = async () => {
+    try {
+      await imagesAPI.hide()
+      setActiveImage(null)
+      setImages(prev => prev.map(img => ({
+        ...img,
+        is_active: 0
+      })))
+      toast.success('Image hidden from overlay!')
+    } catch (error) {
+      console.error('Failed to hide image:', error)
+      toast.error('Failed to hide image')
+    }
+  }
+
+  const setImageCaption = async () => {
+    setIsSettingCaption(true)
+    try {
+      await imagesAPI.setCaption(caption)
+      toast.success('Caption updated!')
+    } catch (error) {
+      console.error('Failed to set caption:', error)
+      toast.error('Failed to set caption')
+    } finally {
+      setIsSettingCaption(false)
+    }
+  }
+
+  const clearImageCaption = async () => {
+    setIsSettingCaption(true)
+    try {
+      await imagesAPI.setCaption('')
+      setCaption('')
+      toast.success('Caption cleared!')
+    } catch (error) {
+      console.error('Failed to clear caption:', error)
+      toast.error('Failed to clear caption')
+    } finally {
+      setIsSettingCaption(false)
+    }
+  }
+
   const deleteImage = async (id) => {
     if (!confirm('Are you sure you want to delete this image?')) {
       return
@@ -207,7 +251,10 @@ export default function ImageUploader() {
                 </span>
               </p>
               <p className="text-xs text-blue-600 mt-1">
-                Recommended size: 1920x1080. Images will automatically appear when uploaded.
+                Recommended size: 1920x1080. Images automatically appear when uploaded or activated.
+              </p>
+              <p className="text-xs text-blue-600 mt-1">
+                <strong>Control your overlay from this page:</strong> Hide images, set captions, and activate previous images using the controls above.
               </p>
             </div>
           </div>
@@ -235,15 +282,130 @@ export default function ImageUploader() {
               <p className="text-sm text-green-600 font-medium mt-1">
                 ✓ Currently displayed on overlay
               </p>
+              <button
+                onClick={hideImage}
+                className="mt-3 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 flex items-center space-x-2"
+              >
+                <EyeOff className="h-4 w-4" />
+                <span>Hide from Overlay</span>
+              </button>
             </div>
           </div>
         </div>
       )}
 
+      {/* Overlay Controls */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+          <Monitor className="h-5 w-5 mr-2 text-blue-600" />
+          Overlay Controls
+        </h3>
+        
+        <div className="space-y-4">
+          {/* Image Controls */}
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={hideImage}
+              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 flex items-center space-x-2"
+            >
+              <EyeOff className="h-4 w-4" />
+              <span>Hide Current Image</span>
+            </button>
+            
+            <button
+              onClick={loadImages}
+              className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 flex items-center space-x-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              <span>Refresh Images</span>
+            </button>
+          </div>
+          
+          {/* Caption Controls */}
+          <div className="border-t pt-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Image Caption
+            </label>
+            <div className="flex space-x-2">
+              <input
+                type="text"
+                value={caption}
+                onChange={(e) => setCaption(e.target.value)}
+                placeholder="Enter caption for overlay..."
+                maxLength={200}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onKeyPress={(e) => e.key === 'Enter' && setImageCaption()}
+              />
+              <button
+                onClick={setImageCaption}
+                disabled={isSettingCaption || !caption.trim()}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+              >
+                <MessageSquare className="h-4 w-4" />
+                <span>{isSettingCaption ? 'Setting...' : 'Set Caption'}</span>
+              </button>
+              <button
+                onClick={clearImageCaption}
+                disabled={isSettingCaption}
+                className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Clear
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              Caption will appear at the bottom of the image in the overlay
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Previous Images Section */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          Previous Images - Quick Activate
+        </h3>
+        
+        {images.length === 0 ? (
+          <div className="text-center py-8">
+            <ImageIcon className="mx-auto h-12 w-12 text-gray-400" />
+            <p className="mt-2 text-gray-500">No images uploaded yet</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            {images.slice(0, 12).map((image) => (
+              <div
+                key={image.id}
+                className={`relative group border-2 rounded-lg overflow-hidden cursor-pointer transition-all ${
+                  image.is_active ? 'border-green-500 ring-2 ring-green-200' : 'border-gray-200 hover:border-blue-300'
+                }`}
+                onClick={() => activateImage(image.id)}
+                title={`${image.original_name} - Click to activate`}
+              >
+                <img
+                  src={`${getBaseUrl()}${image.url}`}
+                  alt={image.original_name}
+                  className="w-full h-20 object-cover"
+                />
+                
+                {image.is_active && (
+                  <div className="absolute top-1 right-1 bg-green-500 text-white text-xs px-1 py-0.5 rounded">
+                    Active
+                  </div>
+                )}
+                
+                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-opacity flex items-center justify-center">
+                  <Eye className="h-5 w-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Image Gallery */}
       <div className="bg-white rounded-lg shadow p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          Uploaded Images
+          All Uploaded Images
         </h3>
 
         {images.length === 0 ? (

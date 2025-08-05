@@ -191,6 +191,38 @@ router.put('/:id/activate', (req, res) => {
   });
 });
 
+// PUT /api/images/hide - Hide currently active image from overlay
+router.put('/hide', (req, res) => {
+  const db = getDatabase();
+  
+  // Deactivate all images (effectively hiding the overlay)
+  db.run('UPDATE images SET is_active = 0', (err) => {
+    if (err) {
+      console.error('Error hiding images:', err);
+      return res.status(500).json({ error: 'Failed to hide image' });
+    }
+    
+    // Emit socket event to hide image on overlay
+    if (req.io) {
+      req.io.to('overlay').emit('image-update', null);
+    }
+    
+    res.json({ message: 'Image hidden successfully' });
+  });
+});
+
+// PUT /api/images/caption - Update caption for overlay
+router.put('/caption', (req, res) => {
+  const { caption } = req.body;
+  
+  // Emit socket event to update caption on overlay
+  if (req.io) {
+    req.io.to('overlay').emit('caption-update', { caption: caption || '' });
+  }
+  
+  res.json({ message: 'Caption updated successfully', caption: caption || '' });
+});
+
 // DELETE /api/images/:id - Delete image
 router.delete('/:id', (req, res) => {
   const db = getDatabase();
