@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
-import { PlusCircle, Sparkles, Copy, Save } from 'lucide-react'
+import { PlusCircle, Sparkles, Copy, Users, MapPin } from 'lucide-react'
 
 import { scenesAPI, charactersAPI, templatesAPI } from '../services/api'
+import Modal from './Modal'
+import SceneModal from './SceneModal'
+import CharacterModal from './CharacterModal'
 
 export default function TemplateGenerator() {
   const [scenes, setScenes] = useState([])
@@ -12,8 +15,10 @@ export default function TemplateGenerator() {
   const [events, setEvents] = useState([''])
   const [generatedTemplate, setGeneratedTemplate] = useState('')
   const [isGenerating, setIsGenerating] = useState(false)
+  const [isScenesModalOpen, setIsScenesModalOpen] = useState(false)
+  const [isCharactersModalOpen, setIsCharactersModalOpen] = useState(false)
 
-  const { register, handleSubmit, watch, reset } = useForm({
+  const { register, handleSubmit, watch, reset, setValue } = useForm({
     defaultValues: {
       title: '',
       sceneId: '',
@@ -21,6 +26,7 @@ export default function TemplateGenerator() {
       customPrompt: '',
     }
   })
+  const watchedSceneId = watch('sceneId')
 
   // Load scenes and characters on mount
   useEffect(() => {
@@ -47,6 +53,23 @@ export default function TemplateGenerator() {
       toast.error('Failed to load characters')
     }
   }
+
+  const refreshLists = async () => {
+    // Reload scenes and characters without altering form state
+    await Promise.all([loadScenes(), loadCharacters()])
+  }
+
+  // Keep selections valid if items were deleted while managing in modals
+  useEffect(() => {
+    if (!characters?.length) return
+    setSelectedCharacters(prev => prev.filter(id => characters.some(c => c.id === id)))
+  }, [characters])
+
+  useEffect(() => {
+    if (!watchedSceneId) return
+    const exists = scenes.some(s => String(s.id) === String(watchedSceneId))
+    if (!exists) setValue('sceneId', '')
+  }, [scenes, watchedSceneId, setValue])
 
   const handleCharacterToggle = (characterId) => {
     setSelectedCharacters(prev => 
@@ -149,17 +172,28 @@ export default function TemplateGenerator() {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Scene
             </label>
-            <select
-              {...register('sceneId')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Select a scene...</option>
-              {scenes.map(scene => (
-                <option key={scene.id} value={scene.id}>
-                  {scene.title}
-                </option>
-              ))}
-            </select>
+            <div className="flex gap-2">
+              <select
+                {...register('sceneId')}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Select a scene...</option>
+                {scenes.map(scene => (
+                  <option key={scene.id} value={scene.id}>
+                    {scene.title}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={() => setIsScenesModalOpen(true)}
+                className="px-3 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 flex items-center gap-1"
+                title="Manage Scenes"
+              >
+                <MapPin className="h-4 w-4" />
+                <span className="hidden sm:inline">Manage</span>
+              </button>
+            </div>
           </div>
 
           {/* Character Selection */}
@@ -167,6 +201,18 @@ export default function TemplateGenerator() {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Characters
             </label>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs text-gray-500">Select one or more characters</p>
+              <button
+                type="button"
+                onClick={() => setIsCharactersModalOpen(true)}
+                className="px-3 py-1.5 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 flex items-center gap-1 text-sm"
+                title="Manage Characters"
+              >
+                <Users className="h-4 w-4" />
+                <span className="hidden sm:inline">Manage</span>
+              </button>
+            </div>
             <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto border border-gray-200 rounded-md p-3">
               {characters.map(character => (
                 <label key={character.id} className="flex items-center space-x-2">
@@ -288,6 +334,31 @@ export default function TemplateGenerator() {
           </div>
         </div>
       )}
+
+      {/* Modals */}
+      <Modal
+        title="Manage Scenes"
+        isOpen={isScenesModalOpen}
+        onClose={async () => { setIsScenesModalOpen(false); await refreshLists(); }}
+        widthClass="max-w-4xl"
+      >
+        <SceneModal
+          onClose={() => setIsScenesModalOpen(false)}
+          onSaved={refreshLists}
+        />
+      </Modal>
+
+      <Modal
+        title="Manage Characters"
+        isOpen={isCharactersModalOpen}
+        onClose={async () => { setIsCharactersModalOpen(false); await refreshLists(); }}
+        widthClass="max-w-4xl"
+      >
+        <CharacterModal
+          onClose={() => setIsCharactersModalOpen(false)}
+          onSaved={refreshLists}
+        />
+      </Modal>
     </div>
   )
 }
