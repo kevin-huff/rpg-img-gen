@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
-import { PlusCircle, Edit, Trash2, Users, Save, X } from 'lucide-react'
+import { PlusCircle, Edit, Trash2, Users, Save, X, Copy } from 'lucide-react'
 
 import { charactersAPI } from '../services/api'
 
@@ -70,6 +70,28 @@ export default function CharacterManager() {
     } catch (error) {
       console.error('Failed to delete character:', error)
       toast.error('Failed to delete character')
+    }
+  }
+
+  const handleDuplicate = async (character) => {
+    try {
+      const response = await charactersAPI.duplicate(character.id)
+      const newCharacter = response.data
+      setCharacters(prev => [newCharacter, ...prev])
+      toast.success('Character duplicated!')
+
+      // Open the form pre-filled with the duplicated character for quick edits
+      setEditingCharacter(newCharacter)
+      setShowForm(true)
+      reset({
+        name: newCharacter.name,
+        description: newCharacter.description,
+        appearance: newCharacter.appearance || '',
+        tags: newCharacter.tags || ''
+      })
+    } catch (error) {
+      console.error('Failed to duplicate character:', error)
+      toast.error('Failed to duplicate character')
     }
   }
 
@@ -254,6 +276,13 @@ export default function CharacterManager() {
                       title="Edit Character"
                     >
                       <Edit className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDuplicate(character)}
+                      className="p-2 text-green-600 hover:bg-green-50 rounded-md"
+                      title="Duplicate Character"
+                    >
+                      <Copy className="h-4 w-4" />
                     </button>
                     <button
                       onClick={() => handleDelete(character.id)}

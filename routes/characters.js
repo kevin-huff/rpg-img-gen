@@ -163,4 +163,42 @@ router.delete('/:id', (req, res) => {
   });
 });
 
+// POST /api/characters/:id/duplicate - Duplicate a character
+router.post('/:id/duplicate', (req, res) => {
+  const db = getDatabase();
+  const { id } = req.params;
+
+  // Fetch the original character
+  db.get('SELECT * FROM characters WHERE id = ?', [id], (err, row) => {
+    if (err) {
+      console.error('Error fetching character to duplicate:', err);
+      return res.status(500).json({ error: 'Failed to duplicate character' });
+    }
+
+    if (!row) {
+      return res.status(404).json({ error: 'Character not found' });
+    }
+
+    const suffix = ' (Copy)';
+    const newName = (row.name + suffix).slice(0, 100);
+    const sql = 'INSERT INTO characters (name, description, appearance, tags) VALUES (?, ?, ?, ?)';
+
+    db.run(sql, [newName, row.description, row.appearance || '', row.tags || ''], function(insertErr) {
+      if (insertErr) {
+        console.error('Error creating duplicated character:', insertErr);
+        return res.status(500).json({ error: 'Failed to create duplicated character' });
+      }
+
+      // Fetch the created duplicated character
+      db.get('SELECT * FROM characters WHERE id = ?', [this.lastID], (fetchErr, newRow) => {
+        if (fetchErr) {
+          console.error('Error fetching duplicated character:', fetchErr);
+          return res.status(500).json({ error: 'Duplicated character created but failed to fetch' });
+        }
+        res.status(201).json(newRow);
+      });
+    });
+  });
+});
+
 module.exports = router;

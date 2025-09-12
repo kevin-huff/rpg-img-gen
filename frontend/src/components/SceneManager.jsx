@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
-import { PlusCircle, Edit, Trash2, MapPin, Save, X } from 'lucide-react'
+import { PlusCircle, Edit, Trash2, MapPin, Save, X, Copy } from 'lucide-react'
 
 import { scenesAPI } from '../services/api'
 
@@ -69,6 +69,27 @@ export default function SceneManager() {
     } catch (error) {
       console.error('Failed to delete scene:', error)
       toast.error('Failed to delete scene')
+    }
+  }
+
+  const handleDuplicate = async (scene) => {
+    try {
+      const response = await scenesAPI.duplicate(scene.id)
+      const newScene = response.data
+      setScenes(prev => [newScene, ...prev])
+      toast.success('Scene duplicated!')
+
+      // Open the form pre-filled with the duplicated scene for quick edits
+      setEditingScene(newScene)
+      setShowForm(true)
+      reset({
+        title: newScene.title,
+        description: newScene.description,
+        tags: newScene.tags || ''
+      })
+    } catch (error) {
+      console.error('Failed to duplicate scene:', error)
+      toast.error('Failed to duplicate scene')
     }
   }
 
@@ -221,6 +242,13 @@ export default function SceneManager() {
                       title="Edit Scene"
                     >
                       <Edit className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDuplicate(scene)}
+                      className="p-2 text-green-600 hover:bg-green-50 rounded-md"
+                      title="Duplicate Scene"
+                    >
+                      <Copy className="h-4 w-4" />
                     </button>
                     <button
                       onClick={() => handleDelete(scene.id)}

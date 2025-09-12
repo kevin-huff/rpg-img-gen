@@ -37,6 +37,7 @@ export const scenesAPI = {
   getById: (id) => api.get(`/scenes/${id}`),
   create: (data) => api.post('/scenes', data),
   update: (id, data) => api.put(`/scenes/${id}`, data),
+  duplicate: (id) => api.post(`/scenes/${id}/duplicate`),
   delete: (id) => api.delete(`/scenes/${id}`),
 }
 
@@ -46,6 +47,7 @@ export const charactersAPI = {
   getById: (id) => api.get(`/characters/${id}`),
   create: (data) => api.post('/characters', data),
   update: (id, data) => api.put(`/characters/${id}`, data),
+  duplicate: (id) => api.post(`/characters/${id}/duplicate`),
   delete: (id) => api.delete(`/characters/${id}`),
 }
 

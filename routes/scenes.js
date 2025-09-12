@@ -161,4 +161,42 @@ router.delete('/:id', (req, res) => {
   });
 });
 
+// POST /api/scenes/:id/duplicate - Duplicate a scene
+router.post('/:id/duplicate', (req, res) => {
+  const db = getDatabase();
+  const { id } = req.params;
+
+  // Fetch the original scene
+  db.get('SELECT * FROM scenes WHERE id = ?', [id], (err, row) => {
+    if (err) {
+      console.error('Error fetching scene to duplicate:', err);
+      return res.status(500).json({ error: 'Failed to duplicate scene' });
+    }
+
+    if (!row) {
+      return res.status(404).json({ error: 'Scene not found' });
+    }
+
+    const suffix = ' (Copy)';
+    const newTitle = (row.title + suffix).slice(0, 200);
+    const sql = 'INSERT INTO scenes (title, description, tags) VALUES (?, ?, ?)';
+
+    db.run(sql, [newTitle, row.description, row.tags || ''], function(insertErr) {
+      if (insertErr) {
+        console.error('Error creating duplicated scene:', insertErr);
+        return res.status(500).json({ error: 'Failed to create duplicated scene' });
+      }
+
+      // Fetch the created duplicated scene
+      db.get('SELECT * FROM scenes WHERE id = ?', [this.lastID], (fetchErr, newRow) => {
+        if (fetchErr) {
+          console.error('Error fetching duplicated scene:', fetchErr);
+          return res.status(500).json({ error: 'Duplicated scene created but failed to fetch' });
+        }
+        res.status(201).json(newRow);
+      });
+    });
+  });
+});
+
 module.exports = router;

@@ -7,6 +7,7 @@ import { scenesAPI, charactersAPI, templatesAPI } from '../services/api'
 import Modal from './Modal'
 import SceneModal from './SceneModal'
 import CharacterModal from './CharacterModal'
+import ImageDropzone from './ImageDropzone'
 
 export default function TemplateGenerator() {
   const [scenes, setScenes] = useState([])
@@ -105,8 +106,21 @@ export default function TemplateGenerator() {
       }
 
       const response = await templatesAPI.generate(templateData)
-      setGeneratedTemplate(response.data.templateText)
-      toast.success('Template generated successfully!')
+      const templateText = response?.data?.templateText || ''
+      setGeneratedTemplate(templateText)
+
+      // Attempt to copy to clipboard automatically after generation
+      if (templateText) {
+        try {
+          await navigator.clipboard.writeText(templateText)
+          toast.success('Template generated and copied to clipboard!')
+        } catch (copyErr) {
+          console.error('Clipboard copy failed:', copyErr)
+          toast.success('Template generated. Click Copy to copy it.')
+        }
+      } else {
+        toast.error('No template text returned')
+      }
       
     } catch (error) {
       console.error('Failed to generate template:', error)
@@ -134,8 +148,9 @@ export default function TemplateGenerator() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="bg-white rounded-lg shadow p-6">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Main content */}
+      <div className="lg:col-span-2 bg-white rounded-lg shadow p-6">
         <h2 className="text-2xl font-bold text-gray-900 mb-6">
           AI Image Template Generator
         </h2>
@@ -309,7 +324,7 @@ export default function TemplateGenerator() {
 
       {/* Generated Template */}
       {generatedTemplate && (
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="lg:col-span-2 bg-white rounded-lg shadow p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900">
               Generated Template
@@ -334,6 +349,11 @@ export default function TemplateGenerator() {
           </div>
         </div>
       )}
+
+      {/* Sidebar: Quick uploader */}
+      <div className="lg:col-span-1 space-y-6">
+        <ImageDropzone />
+      </div>
 
       {/* Modals */}
       <Modal
