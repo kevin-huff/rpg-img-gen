@@ -348,29 +348,12 @@ export default function TemplateGenerator() {
   }
 
   return (
-    <div className="relative lg:pl-72">
-      {/* Pinned actions */}
-      <div className="hidden lg:flex flex-col gap-4 fixed left-6 top-28 z-30 w-60">
-        <button
-          type="submit"
-          form="template-generator-form"
-          disabled={isGenerating}
-          className="flex items-center justify-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-md shadow hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <Sparkles className="h-4 w-4" />
-          <span>{isGenerating ? 'Generating...' : 'Generate Template'}</span>
-        </button>
-        <div className="rounded-lg shadow bg-white">
-          <ImageDropzone />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main content */}
-        <div className="lg:col-span-2 bg-white rounded-lg shadow p-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">
-            AI Image Template Generator
-          </h2>
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Main content */}
+      <div className="lg:col-span-2 bg-white rounded-lg shadow p-6">
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">
+          AI Image Template Generator
+        </h2>
 
         <form id="template-generator-form" onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           {/* Template Title */}
@@ -779,7 +762,7 @@ export default function TemplateGenerator() {
         </form>
       </div>
 
-      {/* Sidebar: Quick uploader for small screens */}
+      {/* Quick uploader for small screens */}
       <div className="lg:hidden space-y-6">
         <ImageDropzone />
       </div>
@@ -836,7 +819,6 @@ export default function TemplateGenerator() {
           onSaved={refreshLists}
         />
       </Modal>
-      </div>
     </div>
   )
 }

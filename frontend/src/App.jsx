@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Toaster } from 'react-hot-toast'
-import { FileImage, PenTool, Upload, Users, MapPin, LogOut } from 'lucide-react'
+import { FileImage, PenTool, Upload, Users, MapPin, LogOut, Sparkles } from 'lucide-react'
 
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { TemplateBuilderProvider } from './contexts/TemplateBuilderContext'
@@ -11,6 +11,7 @@ import ImageUploader from './components/ImageUploader'
 import SceneManager from './components/SceneManager'
 import CharacterManager from './components/CharacterManager'
 import TemplateHistory from './components/TemplateHistory'
+import ImageDropzone from './components/ImageDropzone'
 
 function AppContent() {
   const { user, authenticated, loading, login, logout } = useAuth()
@@ -102,6 +103,22 @@ function AppContent() {
                   )
                 })}
               </nav>
+
+              {currentTab === 'template' && (
+                <div className="hidden lg:block mt-6 space-y-4">
+                  <button
+                    type="submit"
+                    form="template-generator-form"
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md shadow hover:bg-blue-700"
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    <span>Generate Template</span>
+                  </button>
+                  <div className="bg-white rounded-lg shadow">
+                    <ImageDropzone />
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Main Content */}
