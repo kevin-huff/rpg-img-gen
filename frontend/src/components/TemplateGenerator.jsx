@@ -322,6 +322,11 @@ export default function TemplateGenerator() {
         </form>
       </div>
 
+      {/* Sidebar: Quick uploader */}
+      <div className="lg:col-span-1 space-y-6">
+        <ImageDropzone />
+      </div>
+
       {/* Generated Template */}
       {generatedTemplate && (
         <div className="lg:col-span-2 bg-white rounded-lg shadow p-6">
@@ -349,11 +354,6 @@ export default function TemplateGenerator() {
           </div>
         </div>
       )}
-
-      {/* Sidebar: Quick uploader */}
-      <div className="lg:col-span-1 space-y-6">
-        <ImageDropzone />
-      </div>
 
       {/* Modals */}
       <Modal
