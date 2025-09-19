@@ -23,6 +23,7 @@ const sceneRoutes = require('./routes/scenes');
 const characterRoutes = require('./routes/characters');
 const templateRoutes = require('./routes/templates');
 const imageRoutes = require('./routes/images');
+const eventRoutes = require('./routes/events');
 
 const app = express();
 
@@ -159,6 +160,7 @@ app.use('/api/scenes', requireAuth, sceneRoutes);
 app.use('/api/characters', requireAuth, characterRoutes);
 app.use('/api/templates', requireAuth, templateRoutes);
 app.use('/api/images', requireAuth, imageRoutes);
+app.use('/api/events', requireAuth, eventRoutes);
 
 // Health check for Railway
 app.get('/health', (req, res) => {

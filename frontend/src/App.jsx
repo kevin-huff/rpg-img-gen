@@ -3,6 +3,7 @@ import { Toaster } from 'react-hot-toast'
 import { FileImage, PenTool, Upload, Users, MapPin, LogOut } from 'lucide-react'
 
 import { AuthProvider, useAuth } from './contexts/AuthContext'
+import { TemplateBuilderProvider } from './contexts/TemplateBuilderContext'
 import { getBaseUrl } from './utils/environment'
 import Login from './components/Login'
 import TemplateGenerator from './components/TemplateGenerator'
@@ -38,7 +39,8 @@ function AppContent() {
   const CurrentComponent = navigation.find(nav => nav.id === currentTab)?.component || TemplateGenerator
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <TemplateBuilderProvider onRequestNavigate={setCurrentTab}>
+      <div className="min-h-screen bg-gray-50">
       <Toaster position="top-right" />
       
       {/* Header */}
@@ -77,38 +79,39 @@ function AppContent() {
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex gap-8">
-          {/* Sidebar Navigation */}
-          <div className="w-64 flex-shrink-0">
-            <nav className="space-y-2">
-              {navigation.map((item) => {
-                const Icon = item.icon
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => setCurrentTab(item.id)}
-                    className={`w-full flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                      currentTab === item.id
-                        ? 'bg-blue-100 text-blue-700'
-                        : 'text-gray-600 hover:bg-gray-100'
-                    }`}
-                  >
-                    <Icon className="mr-3 h-5 w-5" />
-                    {item.name}
-                  </button>
-                )
-              })}
-            </nav>
-          </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex gap-8">
+            {/* Sidebar Navigation */}
+            <div className="w-64 flex-shrink-0">
+              <nav className="space-y-2">
+                {navigation.map((item) => {
+                  const Icon = item.icon
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => setCurrentTab(item.id)}
+                      className={`w-full flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                        currentTab === item.id
+                          ? 'bg-blue-100 text-blue-700'
+                          : 'text-gray-600 hover:bg-gray-100'
+                      }`}
+                    >
+                      <Icon className="mr-3 h-5 w-5" />
+                      {item.name}
+                    </button>
+                  )
+                })}
+              </nav>
+            </div>
 
-          {/* Main Content */}
-          <div className="flex-1">
-            <CurrentComponent />
+            {/* Main Content */}
+            <div className="flex-1">
+              <CurrentComponent />
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </TemplateBuilderProvider>
   )
 }
 

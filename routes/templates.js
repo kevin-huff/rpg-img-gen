@@ -4,14 +4,35 @@ const Joi = require('joi');
 
 const router = express.Router();
 
+function safeJsonParse(value, fallback) {
+  if (!value && value !== '') {
+    return fallback;
+  }
+
+  try {
+    return value ? JSON.parse(value) : fallback;
+  } catch (err) {
+    console.warn('Failed to parse JSON value from database:', err.message);
+    return fallback;
+  }
+}
+
 // Validation schema
 const templateSchema = Joi.object({
   title: Joi.string().allow('').max(200),
   sceneId: Joi.number().integer().allow(null),
   characterIds: Joi.array().items(Joi.number().integer()).default([]),
+  eventIds: Joi.array().items(Joi.number().integer()).default([]),
   eventDescriptions: Joi.array().items(Joi.string().max(500)).default([]),
   aiStyle: Joi.string().allow('').max(200).default(''),
-  customPrompt: Joi.string().allow('').max(1000).default('')
+  stylePreset: Joi.string().allow('').max(200).default(''),
+  customPrompt: Joi.string().allow('').max(1000).default(''),
+  composition: Joi.string().allow('').max(500).default(''),
+  lighting: Joi.string().allow('').max(500).default(''),
+  mood: Joi.string().allow('').max(500).default(''),
+  camera: Joi.string().allow('').max(500).default(''),
+  postProcessing: Joi.string().allow('').max(500).default(''),
+  modifiers: Joi.array().items(Joi.string().max(200)).default([])
 });
 
 // GET /api/templates - List all templates
@@ -32,7 +53,15 @@ router.get('/', (req, res) => {
       console.error('Error fetching templates:', err);
       return res.status(500).json({ error: 'Failed to fetch templates' });
     }
-    res.json(rows);
+
+    const parsedRows = rows.map((row) => ({
+      ...row,
+      character_ids: safeJsonParse(row.character_ids, []),
+      event_ids: safeJsonParse(row.event_ids, []),
+      input_snapshot: safeJsonParse(row.input_snapshot, null)
+    }));
+
+    res.json(parsedRows);
   });
 });
 
@@ -53,12 +82,19 @@ router.get('/:id', (req, res) => {
       console.error('Error fetching template:', err);
       return res.status(500).json({ error: 'Failed to fetch template' });
     }
-    
+
     if (!row) {
       return res.status(404).json({ error: 'Template not found' });
     }
-    
-    res.json(row);
+
+    const parsedRow = {
+      ...row,
+      character_ids: safeJsonParse(row.character_ids, []),
+      event_ids: safeJsonParse(row.event_ids, []),
+      input_snapshot: safeJsonParse(row.input_snapshot, null)
+    };
+
+    res.json(parsedRow);
   });
 });
 
@@ -70,7 +106,22 @@ router.post('/generate', async (req, res) => {
   }
   
   const db = getDatabase();
-  const { title, sceneId, characterIds, eventDescriptions, aiStyle, customPrompt } = value;
+  const {
+    title,
+    sceneId,
+    characterIds,
+    eventIds,
+    eventDescriptions,
+    aiStyle,
+    stylePreset,
+    customPrompt,
+    composition,
+    lighting,
+    mood,
+    camera,
+    postProcessing,
+    modifiers
+  } = value;
   
   try {
     // Fetch scene data if provided
@@ -96,12 +147,34 @@ router.post('/generate', async (req, res) => {
       });
     }
     
+    // Fetch event data if provided
+    let eventsData = [];
+    if (eventIds.length > 0) {
+      const placeholders = eventIds.map(() => '?').join(',');
+      const eventRows = await new Promise((resolve, reject) => {
+        db.all(`SELECT * FROM events WHERE id IN (${placeholders})`, eventIds, (err, rows) => {
+          if (err) reject(err);
+          else resolve(rows || []);
+        });
+      });
+
+      const eventMap = new Map(eventRows.map((event) => [event.id, event]));
+      eventsData = eventIds
+        .map((eventId) => eventMap.get(eventId))
+        .filter(Boolean);
+    }
+
     // Generate the template text
     let templateText = '';
     
     // Add custom prompt if provided
     if (customPrompt) {
       templateText += customPrompt + '\n\n';
+    }
+
+    // Add modifiers if provided
+    if (modifiers.length > 0) {
+      templateText += `Modifiers: ${modifiers.join(', ')}\n\n`;
     }
     
     // Add scene information
@@ -122,21 +195,42 @@ router.post('/generate', async (req, res) => {
       });
       templateText += '\n';
     }
-    
+
     // Add events/actions
-    if (eventDescriptions.length > 0) {
+    if (eventsData.length > 0 || eventDescriptions.length > 0) {
       templateText += 'Events/Actions:\n';
-      eventDescriptions.forEach((event, index) => {
-        templateText += `${index + 1}. ${event}\n`;
+      let counter = 1;
+      eventsData.forEach((event) => {
+        templateText += `${counter}. ${event.description}`;
+        if (event.tags) {
+          templateText += ` (Tags: ${event.tags})`;
+        }
+        templateText += '\n';
+        counter += 1;
+      });
+      eventDescriptions.forEach((event) => {
+        templateText += `${counter}. ${event}\n`;
+        counter += 1;
       });
       templateText += '\n';
     }
-    
-    // Add AI style guidance
-    if (aiStyle) {
-      templateText += `Style: ${aiStyle}\n`;
-    }
-    
+
+    const promptDetails = [
+      { label: 'Composition', value: composition },
+      { label: 'Lighting', value: lighting },
+      { label: 'Mood', value: mood },
+      { label: 'Camera', value: camera },
+      { label: 'Post-Processing', value: postProcessing },
+      { label: 'Style Preset', value: stylePreset },
+      { label: 'AI Style', value: aiStyle }
+    ];
+
+    promptDetails.forEach(({ label, value }) => {
+      if (value) {
+        templateText += `${label}: ${value}\n`;
+      }
+    });
+
     // Clean up the template
     templateText = templateText.trim();
     
@@ -146,16 +240,35 @@ router.post('/generate', async (req, res) => {
     
     // Save the template to database
     const insertSql = `
-      INSERT INTO templates (title, template_text, scene_id, character_ids, ai_style) 
-      VALUES (?, ?, ?, ?, ?)
+      INSERT INTO templates (title, template_text, scene_id, character_ids, event_ids, ai_style, input_snapshot) 
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
-    
+
+    const inputSnapshot = JSON.stringify({
+      title: title || '',
+      sceneId: sceneId || null,
+      characterIds,
+      eventIds,
+      eventDescriptions,
+      aiStyle,
+      stylePreset,
+      customPrompt,
+      composition,
+      lighting,
+      mood,
+      camera,
+      postProcessing,
+      modifiers
+    });
+
     db.run(insertSql, [
       title || `Template ${new Date().toISOString()}`,
       templateText,
       sceneId || null,
       JSON.stringify(characterIds),
-      aiStyle || ''
+      JSON.stringify(eventIds),
+      aiStyle || '',
+      inputSnapshot
     ], function(err) {
       if (err) {
         console.error('Error saving template:', err);
@@ -165,6 +278,8 @@ router.post('/generate', async (req, res) => {
       const templateId = this.lastID;
       
       // Emit socket event for real-time updates
+      const parsedSnapshot = JSON.parse(inputSnapshot);
+
       if (req.io) {
         req.io.emit('template-generated', {
           id: templateId,
@@ -172,6 +287,9 @@ router.post('/generate', async (req, res) => {
           templateText,
           sceneData,
           charactersData,
+          eventsData,
+          eventIds,
+          inputSnapshot: parsedSnapshot,
           timestamp: new Date().toISOString()
         });
       }
@@ -183,7 +301,17 @@ router.post('/generate', async (req, res) => {
         sceneData,
         charactersData,
         eventDescriptions,
-        aiStyle
+        eventsData,
+        eventIds,
+        aiStyle,
+        stylePreset,
+        composition,
+        lighting,
+        mood,
+        camera,
+        postProcessing,
+        modifiers,
+        inputSnapshot: parsedSnapshot
       });
     });
     

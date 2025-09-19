@@ -51,6 +51,12 @@ export const charactersAPI = {
   delete: (id) => api.delete(`/characters/${id}`),
 }
 
+// Events API
+export const eventsAPI = {
+  getAll: (params = {}) => api.get('/events', { params }),
+  create: (data) => api.post('/events', data),
+}
+
 // Templates API
 export const templatesAPI = {
   getAll: (params = {}) => api.get('/templates', { params }),

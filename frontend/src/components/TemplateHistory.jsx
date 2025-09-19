@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
-import { FileImage, Copy, Trash2, Clock, Eye } from 'lucide-react'
+import { FileImage, Copy, Trash2, Clock, Eye, MoveRight } from 'lucide-react'
 
 import { templatesAPI } from '../services/api'
+import { useTemplateBuilder } from '../contexts/TemplateBuilderContext'
 
 export default function TemplateHistory() {
   const [templates, setTemplates] = useState([])
   const [loading, setLoading] = useState(true)
   const [selectedTemplate, setSelectedTemplate] = useState(null)
+  const { requestPrefill } = useTemplateBuilder()
 
   useEffect(() => {
     loadTemplates()
@@ -52,6 +54,39 @@ export default function TemplateHistory() {
       console.error('Failed to delete template:', error)
       toast.error('Failed to delete template')
     }
+  }
+
+  const handleLoadInBuilder = (template) => {
+    if (!template) return
+
+    const snapshot = template.input_snapshot || {}
+    const toNumber = (value) => {
+      if (value === null || value === undefined || value === '') return null
+      const parsed = typeof value === 'string' ? parseInt(value, 10) : value
+      return Number.isFinite(parsed) ? parsed : null
+    }
+
+    const arrayOrEmpty = (value) => (Array.isArray(value) ? [...value] : [])
+
+    const payload = {
+      title: snapshot.title ?? template.title ?? '',
+      sceneId: toNumber(snapshot.sceneId ?? template.scene_id ?? null),
+      characterIds: arrayOrEmpty(snapshot.characterIds ?? template.character_ids),
+      eventIds: arrayOrEmpty(snapshot.eventIds ?? template.event_ids),
+      eventDescriptions: arrayOrEmpty(snapshot.eventDescriptions),
+      aiStyle: snapshot.aiStyle ?? template.ai_style ?? '',
+      stylePreset: snapshot.stylePreset ?? '',
+      customPrompt: snapshot.customPrompt ?? '',
+      composition: snapshot.composition ?? '',
+      lighting: snapshot.lighting ?? '',
+      mood: snapshot.mood ?? '',
+      camera: snapshot.camera ?? '',
+      postProcessing: snapshot.postProcessing ?? '',
+      modifiers: arrayOrEmpty(snapshot.modifiers),
+    }
+
+    requestPrefill(payload)
+    toast.success('Template loaded into builder')
   }
 
   const formatDate = (dateString) => {
@@ -118,6 +153,16 @@ export default function TemplateHistory() {
                         <button
                           onClick={(e) => {
                             e.stopPropagation()
+                            handleLoadInBuilder(template)
+                          }}
+                          className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                          title="Load in Builder"
+                        >
+                          <MoveRight className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
                             copyTemplate(template.template_text)
                           }}
                           className="p-1 text-green-600 hover:bg-green-50 rounded"
@@ -155,7 +200,7 @@ export default function TemplateHistory() {
                       {selectedTemplate.title || `Template ${selectedTemplate.id}`}
                     </h4>
                     
-                    <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center justify-between mb-4 gap-3">
                       <div className="text-sm text-gray-500">
                         <p>Created: {formatDate(selectedTemplate.created_at)}</p>
                         {selectedTemplate.scene_title && (
@@ -163,13 +208,22 @@ export default function TemplateHistory() {
                         )}
                       </div>
                       
-                      <button
-                        onClick={() => copyTemplate(selectedTemplate.template_text)}
-                        className="flex items-center space-x-2 px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
-                      >
-                        <Copy className="h-3 w-3" />
-                        <span>Copy</span>
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleLoadInBuilder(selectedTemplate)}
+                          className="flex items-center space-x-2 px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                        >
+                          <MoveRight className="h-3 w-3" />
+                          <span>Load in Builder</span>
+                        </button>
+                        <button
+                          onClick={() => copyTemplate(selectedTemplate.template_text)}
+                          className="flex items-center space-x-2 px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
+                        >
+                          <Copy className="h-3 w-3" />
+                          <span>Copy</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                   
