@@ -17,6 +17,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 const { initializeDatabase } = require('./db/database');
+const { ensureEventLibrarySeeded } = require('./db/seedEvents');
 const { initializeAuth, requireAuth } = require('./middleware/auth');
 const authRoutes = require('./routes/auth');
 const sceneRoutes = require('./routes/scenes');
@@ -231,6 +232,10 @@ process.on('SIGINT', () => {
 async function startServer() {
   try {
     await initializeDatabase();
+    const seedResult = await ensureEventLibrarySeeded();
+    if (seedResult?.needsRetry) {
+      await ensureEventLibrarySeeded();
+    }
     await initializeAuth();
     console.log('Database and authentication initialized successfully');
     

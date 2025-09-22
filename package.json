@@ -9,11 +9,11 @@
     "frontend:dev": "cd frontend && npm run dev",
     "frontend:build": "cd frontend && npm run build",
     "frontend:preview": "cd frontend && npm run preview",
-    "build": "npm run frontend:build",
+    "build": "npm run frontend:build && npm run db:init",
     "setup": "npm install && cd frontend && npm install",
-    "setup:prod": "npm ci && cd frontend && npm ci && npm run build",
+    "setup:prod": "npm ci && cd frontend && npm ci && npm run build && cd .. && npm run db:init",
     "db:init": "node scripts/init-db.js",
-    "railway:setup": "npm install && cd frontend && npm install && npm run build"
+    "railway:setup": "npm install && cd frontend && npm install && npm run build && cd .. && npm run db:init"
   },
   "engines": {
     "node": ">=18.0.0",

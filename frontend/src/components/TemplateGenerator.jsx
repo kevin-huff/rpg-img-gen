@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useId } from 'react'
 import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
 import { PlusCircle, Sparkles, Copy, Users, MapPin, X } from 'lucide-react'
@@ -65,6 +65,50 @@ const STYLE_PRESETS = [
   }
 ]
 
+const LIGHTING_OPTIONS = [
+  'Golden hour sunlight carving dramatic rim light',
+  'Moonlit cityscape with cool blue highlights',
+  'Torchlit corridor with flickering amber shadows',
+  'Bioluminescent glyphs casting ethereal glow',
+  'Neon street wash bouncing off rain-slick pavement',
+  'Volcanic lava underlighting with ember sparks',
+  'Stained glass shafts of color breaking through dust',
+  'Stormfront lightning bursts freezing action mid-frame'
+]
+
+const MOOD_OPTIONS = [
+  'Triumphant heroism on the brink of victory',
+  'Coiled tension before the decisive strike',
+  'Haunting calm after catastrophic impact',
+  'Spellbound wonder at impossible revelations',
+  'Brooding noir suspicion in rain-soaked alleys',
+  'Rallying camaraderie against overwhelming odds',
+  'Unsettling quiet before supernatural surge',
+  'Frenzied chaos with kinetic desperation'
+]
+
+const CAMERA_OPTIONS = [
+  'Low-angle hero shot on a 24mm lens',
+  'Over-the-shoulder tracking through the action',
+  'Aerial top-down establishing sweep',
+  'Dutch angle close-up tightened on expressions',
+  'Macro focus on relic with shallow depth of field',
+  'Cinematic dolly push toward the confrontation',
+  'Handheld chase framing with motion blur streaks',
+  'Split-diopter composition balancing two focal planes'
+]
+
+const POST_PROCESSING_OPTIONS = [
+  'Cinematic teal and orange grade with soft bloom',
+  'High-contrast comic ink pass with halftone grain',
+  'Painterly brushwork layering and impasto highlights',
+  'Retro risograph duotone with off-register charms',
+  'HDR glow with lens flare and particle overlays',
+  'Selective color isolation against muted palette',
+  'Sepia-toned archival treatment with scratches',
+  'Cool chromatic aberration and vignette edges'
+]
+
 const parseTags = (tagString) => {
   if (!tagString) return []
   return tagString
@@ -120,6 +164,10 @@ export default function TemplateGenerator() {
       postProcessing: '',
     }
   })
+  const lightingListId = useId()
+  const moodListId = useId()
+  const cameraListId = useId()
+  const postProcessingListId = useId()
   const watchedSceneId = watch('sceneId')
   const watchedStylePreset = watch('stylePreset')
   const { prefill, clearPrefill } = useTemplateBuilder()
@@ -437,10 +485,16 @@ export default function TemplateGenerator() {
               </label>
               <input
                 type="text"
+                list={lightingListId}
                 {...register('lighting')}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Golden hour rim light, torchlit gloom, neon highlights..."
               />
+              <datalist id={lightingListId}>
+                {LIGHTING_OPTIONS.map((option) => (
+                  <option key={option} value={option} />
+                ))}
+              </datalist>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -448,10 +502,16 @@ export default function TemplateGenerator() {
               </label>
               <input
                 type="text"
+                list={moodListId}
                 {...register('mood')}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Triumphant, eerie suspense, solemn aftermath..."
               />
+              <datalist id={moodListId}>
+                {MOOD_OPTIONS.map((option) => (
+                  <option key={option} value={option} />
+                ))}
+              </datalist>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -459,10 +519,16 @@ export default function TemplateGenerator() {
               </label>
               <input
                 type="text"
+                list={cameraListId}
                 {...register('camera')}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="35mm lens close-up, drone top-down, cinematic dolly shot..."
               />
+              <datalist id={cameraListId}>
+                {CAMERA_OPTIONS.map((option) => (
+                  <option key={option} value={option} />
+                ))}
+              </datalist>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -470,10 +536,16 @@ export default function TemplateGenerator() {
               </label>
               <input
                 type="text"
+                list={postProcessingListId}
                 {...register('postProcessing')}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="High-contrast grading, painterly brushwork, film grain overlay..."
               />
+              <datalist id={postProcessingListId}>
+                {POST_PROCESSING_OPTIONS.map((option) => (
+                  <option key={option} value={option} />
+                ))}
+              </datalist>
             </div>
           </div>
 
