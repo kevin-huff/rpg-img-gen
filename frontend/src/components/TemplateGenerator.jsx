@@ -65,48 +65,109 @@ const STYLE_PRESETS = [
   }
 ]
 
+const COMPOSITION_OPTIONS = [
+  'Wide establishing shot',
+  'Over-the-shoulder action',
+  'Intimate portrait',
+  'Two-shot standoff',
+  'Crowd chaos with central hero',
+  'Low-angle power pose',
+  'High-angle vulnerability',
+  'Rule-of-thirds hero off-center',
+  'Symmetrical corridor framing',
+  'Dutch angle tension',
+  'Foreground occlusion peeking',
+  'Depth-stacked silhouettes',
+  'Vignette spotlight on subject',
+  'Tracking run-and-gun feel',
+  'Tabletop tactical map close-up',
+  'Crossfire triangulation',
+  'Portal doorway reveal',
+  'Mirror or puddle reflection frame'
+]
+
 const LIGHTING_OPTIONS = [
-  'Golden hour sunlight carving dramatic rim light',
-  'Moonlit cityscape with cool blue highlights',
-  'Torchlit corridor with flickering amber shadows',
-  'Bioluminescent glyphs casting ethereal glow',
-  'Neon street wash bouncing off rain-slick pavement',
-  'Volcanic lava underlighting with ember sparks',
-  'Stained glass shafts of color breaking through dust',
-  'Stormfront lightning bursts freezing action mid-frame'
+  'Golden hour rim light',
+  'Cold moonlight with mist',
+  'Torchlit glow and soot',
+  'Neon spill from signs',
+  'Volumetric god rays',
+  'Strobe burst in darkness',
+  'Overcast softbox sky',
+  'Backlit silhouette flare',
+  'Candle cluster warmth',
+  'Lightning flash accents',
+  'Bi-color teal and amber',
+  'Harsh interrogation top-light',
+  'Under-lighting campfire',
+  'Flickering CRT spill',
+  'Subterranean bioluminescence',
+  'Spell aura bloom',
+  'Emergency red strobes',
+  'Starfield key with soft fill'
 ]
 
 const MOOD_OPTIONS = [
-  'Triumphant heroism on the brink of victory',
-  'Coiled tension before the decisive strike',
-  'Haunting calm after catastrophic impact',
-  'Spellbound wonder at impossible revelations',
-  'Brooding noir suspicion in rain-soaked alleys',
-  'Rallying camaraderie against overwhelming odds',
-  'Unsettling quiet before supernatural surge',
-  'Frenzied chaos with kinetic desperation'
+  'Triumphant',
+  'Eerie suspense',
+  'Solemn',
+  'Desperate last stand',
+  'Grim resolve',
+  'Whimsical mischief',
+  'Sacred awe',
+  'Paranoid dread',
+  'Stoic determination',
+  'Melancholy quiet',
+  'Ferocious blood-rush',
+  'Hopeful respite',
+  'Shock and disbelief',
+  'Righteous fury',
+  'Tense negotiation',
+  'Black comedy',
+  'Noble sacrifice',
+  'Wild exultation'
 ]
 
 const CAMERA_OPTIONS = [
-  'Low-angle hero shot on a 24mm lens',
-  'Over-the-shoulder tracking through the action',
-  'Aerial top-down establishing sweep',
-  'Dutch angle close-up tightened on expressions',
-  'Macro focus on relic with shallow depth of field',
-  'Cinematic dolly push toward the confrontation',
-  'Handheld chase framing with motion blur streaks',
-  'Split-diopter composition balancing two focal planes'
+  '35mm lens close-up',
+  '24mm wide hero shot',
+  '85mm portrait compression',
+  '14mm ultra-wide cavern',
+  'Macro detail insert',
+  'Drone top-down',
+  'Low dolly push-in',
+  'Handheld jitter chase',
+  'Static tripod tableau',
+  'Crane rise reveal',
+  'Rack focus pull',
+  'Long exposure motion smear',
+  'Slow shutter torch trails',
+  'Overcranked slow motion',
+  'POV helmet cam',
+  'Gimbal glide through doorway',
+  'Tilt-shift miniatures',
+  'Fisheye claustrophobia'
 ]
 
 const POST_PROCESSING_OPTIONS = [
-  'Cinematic teal and orange grade with soft bloom',
-  'High-contrast comic ink pass with halftone grain',
-  'Painterly brushwork layering and impasto highlights',
-  'Retro risograph duotone with off-register charms',
-  'HDR glow with lens flare and particle overlays',
-  'Selective color isolation against muted palette',
-  'Sepia-toned archival treatment with scratches',
-  'Cool chromatic aberration and vignette edges'
+  'High-contrast grading',
+  'Painterly brush texture',
+  'Film grain and gate weave',
+  'Bleach bypass steel',
+  'Soft bloom and halation',
+  'Cross-process retro',
+  'Sepia parchment age',
+  'Cool shadows warm highlights',
+  'Split-toned dusk',
+  'Vignette and subtle chromatic aberration',
+  'CRT scanline composite',
+  'Inked comic outlines',
+  'Watercolor wash edges',
+  'Desaturated war grime',
+  'Neon synthwave glow',
+  'Photochemical print fade',
+  'Gritty LUT with crushed blacks',
+  'Clean HDR pop'
 ]
 
 const parseTags = (tagString) => {
@@ -164,6 +225,7 @@ export default function TemplateGenerator() {
       postProcessing: '',
     }
   })
+  const compositionListId = useId()
   const lightingListId = useId()
   const moodListId = useId()
   const cameraListId = useId()
@@ -472,12 +534,18 @@ export default function TemplateGenerator() {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Composition
               </label>
-              <textarea
+              <input
+                type="text"
+                list={compositionListId}
                 {...register('composition')}
-                rows={2}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Frame the scene – e.g., wide establishing shot, intimate portrait, over-the-shoulder action..."
+                placeholder="Wide establishing shot, over-the-shoulder action, portal doorway reveal..."
               />
+              <datalist id={compositionListId}>
+                {COMPOSITION_OPTIONS.map((option) => (
+                  <option key={option} value={option} />
+                ))}
+              </datalist>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
