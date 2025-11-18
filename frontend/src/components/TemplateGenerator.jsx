@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useId } from 'react'
 import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
-import { PlusCircle, Sparkles, Copy, Users, MapPin, X } from 'lucide-react'
+import { PlusCircle, MapPin, Users, Star } from 'lucide-react'
 
 import { scenesAPI, charactersAPI, templatesAPI, eventsAPI } from '../services/api'
 import { useTemplateBuilder } from '../contexts/TemplateBuilderContext'
@@ -9,6 +9,10 @@ import Modal from './Modal'
 import SceneModal from './SceneModal'
 import CharacterModal from './CharacterModal'
 import ImageDropzone from './ImageDropzone'
+import PromptPreview from './PromptPreview'
+import ModifierChips from './ModifierChips'
+import QuickSelect from './QuickSelect'
+import SelectionCard from './SelectionCard'
 
 import {
   STYLE_PRESETS,
@@ -18,7 +22,6 @@ import {
   CAMERA_OPTIONS,
   POST_PROCESSING_OPTIONS
 } from '../constants/options'
-import SelectionCard from './SelectionCard'
 
 const parseTags = (tagString) => {
   if (!tagString) return []
@@ -51,15 +54,23 @@ export default function TemplateGenerator() {
   const [scenes, setScenes] = useState([])
   const [characters, setCharacters] = useState([])
   const [eventLibrary, setEventLibrary] = useState([])
+
+  // Search States
   const [eventSearch, setEventSearch] = useState('')
   const [sceneSearch, setSceneSearch] = useState('')
   const [characterSearch, setCharacterSearch] = useState('')
+
+  // Selection States
   const [selectedCharacters, setSelectedCharacters] = useState([])
   const [selectedEventIds, setSelectedEventIds] = useState([])
   const [customEvents, setCustomEvents] = useState([''])
   const [promptModifiers, setPromptModifiers] = useState([])
-  const [generatedTemplate, setGeneratedTemplate] = useState('')
+
+  // Preview & Generation
+  const [generatedPreview, setGeneratedPreview] = useState('')
   const [isGenerating, setIsGenerating] = useState(false)
+
+  // Modals
   const [isScenesModalOpen, setIsScenesModalOpen] = useState(false)
   const [isCharactersModalOpen, setIsCharactersModalOpen] = useState(false)
 
@@ -77,16 +88,15 @@ export default function TemplateGenerator() {
       postProcessing: '',
     }
   })
-  const compositionListId = useId()
-  const lightingListId = useId()
-  const moodListId = useId()
-  const cameraListId = useId()
-  const postProcessingListId = useId()
-  const watchedSceneId = watch('sceneId')
-  const watchedStylePreset = watch('stylePreset')
+
+  // Watch all fields for real-time preview
+  const watchedValues = watch()
+  const watchedSceneId = watchedValues.sceneId
+  const watchedStylePreset = watchedValues.stylePreset
+
   const { prefill, clearPrefill } = useTemplateBuilder()
 
-  // Load scenes and characters on mount
+  // Load Data
   useEffect(() => {
     loadScenes()
     loadCharacters()
@@ -123,11 +133,6 @@ export default function TemplateGenerator() {
     }
   }
 
-  const refreshLists = async () => {
-    // Reload scenes and characters without altering form state
-    await Promise.all([loadScenes(), loadCharacters(), loadEvents()])
-  }
-
   // Keep selections valid if items were deleted while managing in modals
   useEffect(() => {
     if (!characters?.length) return
@@ -145,6 +150,7 @@ export default function TemplateGenerator() {
     setSelectedEventIds(prev => prev.filter(id => eventLibrary.some(event => event.id === id)))
   }, [eventLibrary])
 
+  // Handle Prefill
   useEffect(() => {
     if (!prefill) return
 
@@ -170,30 +176,122 @@ export default function TemplateGenerator() {
     const restoredModifiers = normalizeStringArray(prefill.modifiers)
     setPromptModifiers(restoredModifiers)
 
-    setGeneratedTemplate('')
     setEventSearch('')
-
     clearPrefill()
   }, [prefill, reset, clearPrefill])
 
+  // Real-time Preview Logic
+  useEffect(() => {
+    generatePreview()
+  }, [
+    watchedValues,
+    selectedCharacters,
+    selectedEventIds,
+    customEvents,
+    promptModifiers,
+    scenes,
+    characters,
+    eventLibrary
+  ])
+
+  const generatePreview = () => {
+    const {
+      sceneId,
+      customPrompt,
+      composition,
+      lighting,
+      mood,
+      camera,
+      postProcessing,
+      stylePreset,
+      aiStyle
+    } = watchedValues
+
+    let text = ''
+
+    // Custom Prompt
+    if (customPrompt) text += customPrompt + '\n\n'
+
+    // Modifiers
+    if (promptModifiers.length > 0) {
+      text += `Modifiers: ${promptModifiers.join(', ')}\n\n`
+    }
+
+    // Scene
+    if (sceneId) {
+      const scene = scenes.find(s => String(s.id) === String(sceneId))
+      if (scene) {
+        text += `Scene: ${scene.title}\n${scene.description}\n\n`
+      }
+    }
+
+    // Characters
+    if (selectedCharacters.length > 0) {
+      const chars = selectedCharacters
+        .map(id => characters.find(c => c.id === id))
+        .filter(Boolean)
+
+      if (chars.length > 0) {
+        text += 'Characters:\n'
+        chars.forEach(char => {
+          text += `- ${char.name}: ${char.description}`
+          if (char.appearance) text += ` (Appearance: ${char.appearance})`
+          text += '\n'
+        })
+        text += '\n'
+      }
+    }
+
+    // Events
+    const selectedLibraryEvents = selectedEventIds
+      .map(id => eventLibrary.find(e => e.id === id))
+      .filter(Boolean)
+
+    const validCustomEvents = customEvents.filter(e => e.trim())
+
+    if (selectedLibraryEvents.length > 0 || validCustomEvents.length > 0) {
+      text += 'Events/Actions:\n'
+      let counter = 1
+
+      selectedLibraryEvents.forEach(event => {
+        text += `${counter}. ${event.description}`
+        if (event.tags) text += ` (Tags: ${event.tags})`
+        text += '\n'
+        counter++
+      })
+
+      validCustomEvents.forEach(desc => {
+        text += `${counter}. ${desc}\n`
+        counter++
+      })
+      text += '\n'
+    }
+
+    // Style Details
+    const details = [
+      { label: 'Composition', value: composition },
+      { label: 'Lighting', value: lighting },
+      { label: 'Mood', value: mood },
+      { label: 'Camera', value: camera },
+      { label: 'Post-Processing', value: postProcessing },
+      { label: 'Style Preset', value: stylePreset },
+      { label: 'AI Style', value: aiStyle }
+    ]
+
+    details.forEach(({ label, value }) => {
+      if (value) text += `${label}: ${value}\n`
+    })
+
+    setGeneratedPreview(text.trim())
+  }
+
+  // Handlers
   const handleCharacterToggle = (characterId) => {
     setSelectedCharacters(prev =>
       prev.includes(characterId)
         ? prev.filter(id => id !== characterId)
         : [...prev, characterId]
     )
-  }
-
-  const addEvent = () => {
-    setCustomEvents(prev => [...prev, ''])
-  }
-
-  const updateEvent = (index, value) => {
-    setCustomEvents(prev => prev.map((event, i) => i === index ? value : event))
-  }
-
-  const removeEvent = (index) => {
-    setCustomEvents(prev => prev.filter((_, i) => i !== index))
   }
 
   const toggleEventSelection = (eventId) => {
@@ -214,30 +312,52 @@ export default function TemplateGenerator() {
     setPromptModifiers(prev => prev.filter(item => item !== tag))
   }
 
-  const selectedScene = useMemo(() => {
-    if (!watchedSceneId) return null
-    return scenes.find(scene => String(scene.id) === String(watchedSceneId)) || null
-  }, [scenes, watchedSceneId])
+  const onSubmit = async (data) => {
+    setIsGenerating(true)
+    try {
+      const templateData = {
+        title: data.title,
+        sceneId: data.sceneId ? parseInt(data.sceneId) : null,
+        characterIds: selectedCharacters,
+        eventIds: selectedEventIds,
+        eventDescriptions: customEvents.filter(event => event.trim()),
+        aiStyle: data.aiStyle,
+        stylePreset: data.stylePreset,
+        customPrompt: data.customPrompt,
+        composition: data.composition,
+        lighting: data.lighting,
+        mood: data.mood,
+        camera: data.camera,
+        postProcessing: data.postProcessing,
+        modifiers: promptModifiers,
+      }
 
-  const selectedSceneTags = useMemo(() => parseTags(selectedScene?.tags), [selectedScene])
+      await templatesAPI.generate(templateData)
+      toast.success('Template generated and saved!')
+      // Note: We don't need to setGeneratedTemplate here anymore as we rely on preview
+      // But we might want to clear the form or keep it for tweaks.
+      // For now, let's keep it to allow tweaks.
+    } catch (error) {
+      console.error('Failed to generate template:', error)
+      toast.error('Failed to generate template')
+    } finally {
+      setIsGenerating(false)
+    }
+  }
 
-  const selectedEvents = useMemo(() => {
-    if (!selectedEventIds.length) return []
-    return selectedEventIds
-      .map(eventId => eventLibrary.find(event => event.id === eventId))
-      .filter(Boolean)
-  }, [selectedEventIds, eventLibrary])
+  const clearForm = () => {
+    reset()
+    setSelectedCharacters([])
+    setSelectedEventIds([])
+    setCustomEvents([''])
+    setPromptModifiers([])
+    setEventSearch('')
+    setSceneSearch('')
+    setCharacterSearch('')
+    setGeneratedPreview('') // Clear preview as well
+  }
 
-  const filteredEventLibrary = useMemo(() => {
-    const query = eventSearch.trim().toLowerCase()
-    if (!query) return eventLibrary
-    return eventLibrary.filter((event) => {
-      const description = event.description?.toLowerCase() || ''
-      const tags = event.tags?.toLowerCase() || ''
-      return description.includes(query) || tags.includes(query)
-    })
-  }, [eventLibrary, eventSearch])
-
+  // Filtering
   const filteredScenes = useMemo(() => {
     const query = sceneSearch.trim().toLowerCase()
     if (!query) return scenes
@@ -260,577 +380,382 @@ export default function TemplateGenerator() {
     })
   }, [characters, characterSearch])
 
-  const selectedPresetDetails = useMemo(() => {
-    if (!watchedStylePreset) return null
-    return STYLE_PRESETS.find((preset) => preset.value === watchedStylePreset) || null
-  }, [watchedStylePreset])
-
-  const onSubmit = async (data) => {
-    setIsGenerating(true)
-
-    try {
-      const templateData = {
-        title: data.title,
-        sceneId: data.sceneId ? parseInt(data.sceneId) : null,
-        characterIds: selectedCharacters,
-        eventIds: selectedEventIds,
-        eventDescriptions: customEvents.filter(event => event.trim()),
-        aiStyle: data.aiStyle,
-        stylePreset: data.stylePreset,
-        customPrompt: data.customPrompt,
-        composition: data.composition,
-        lighting: data.lighting,
-        mood: data.mood,
-        camera: data.camera,
-        postProcessing: data.postProcessing,
-        modifiers: promptModifiers,
-      }
-
-      const response = await templatesAPI.generate(templateData)
-      const templateText = response?.data?.templateText || ''
-      setGeneratedTemplate(templateText)
-
-      // Attempt to copy to clipboard automatically after generation
-      if (templateText) {
-        try {
-          await navigator.clipboard.writeText(templateText)
-          toast.success('Template generated and copied to clipboard!')
-        } catch (copyErr) {
-          console.error('Clipboard copy failed:', copyErr)
-          toast.success('Template generated. Click Copy to copy it.')
-        }
-      } else {
-        toast.error('No template text returned')
-      }
-
-    } catch (error) {
-      console.error('Failed to generate template:', error)
-      toast.error('Failed to generate template')
-    } finally {
-      setIsGenerating(false)
-    }
-  }
-
-  const copyToClipboard = async () => {
-    try {
-      await navigator.clipboard.writeText(generatedTemplate)
-      toast.success('Template copied to clipboard!')
-    } catch (error) {
-      console.error('Failed to copy:', error)
-      toast.error('Failed to copy template')
-    }
-  }
-
-  const clearForm = () => {
-    reset()
-    setSelectedCharacters([])
-    setSelectedEventIds([])
-    setCustomEvents([''])
-    setPromptModifiers([])
-    setEventSearch('')
-    setSceneSearch('')
-    setCharacterSearch('')
-    setGeneratedTemplate('')
-  }
+  const filteredEvents = useMemo(() => {
+    const query = eventSearch.trim().toLowerCase()
+    if (!query) return eventLibrary
+    return eventLibrary.filter((event) => {
+      const description = event.description?.toLowerCase() || ''
+      const tags = event.tags?.toLowerCase() || ''
+      return description.includes(query) || tags.includes(query)
+    })
+  }, [eventLibrary, eventSearch])
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      {/* Main content */}
-      <div className="lg:col-span-2 bg-white rounded-lg shadow p-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">
-          AI Image Template Generator
-        </h2>
+    <div className="h-[calc(100vh-100px)] flex flex-col lg:flex-row gap-6 overflow-hidden">
+      {/* LEFT COLUMN: Controls (Scrollable) */}
+      <div className="flex-1 flex flex-col gap-6 overflow-y-auto pr-2 pb-20 lg:pb-0">
 
-        <form id="template-generator-form" onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          {/* Template Title */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Template Title (Optional)
-            </label>
-            <input
-              type="text"
-              {...register('title')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Enter a title for this template..."
-            />
+        {/* Header & Title */}
+        <div className="bg-white rounded-lg shadow p-4">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">Template Builder</h2>
+          <input
+            type="text"
+            {...register('title')}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Template Title (Optional)..."
+          />
+        </div>
+
+        {/* Custom Prompt */}
+        <div className="bg-white rounded-lg shadow p-4">
+          <h3 className="font-semibold text-gray-800 mb-3">Custom Prompt</h3>
+          <textarea
+            {...register('customPrompt')}
+            rows={3}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+            placeholder="Add any custom instructions or style notes..."
+          />
+        </div>
+
+        {/* Prompt Modifiers */}
+        <div className="bg-white rounded-lg shadow p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold text-gray-800">Prompt Modifiers</h3>
+            <p className="text-xs text-gray-500 hidden sm:block">
+              Click scene or character tags to add quick modifiers
+            </p>
           </div>
-
-          {/* Custom Prompt */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Custom Prompt (Optional)
-            </label>
-            <textarea
-              {...register('customPrompt')}
-              rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Add any custom instructions or style notes..."
-            />
-          </div>
-
-          {/* Prompt Modifiers */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Prompt Modifiers
-              </label>
-              <p className="text-xs text-gray-500 hidden sm:block">
-                Click scene or character tags to add quick modifiers
-              </p>
-            </div>
+          <div className="flex flex-wrap gap-2 border border-gray-200 rounded-md p-3">
             {promptModifiers.length === 0 ? (
-              <p className="text-sm text-gray-500 border border-dashed border-gray-300 rounded-md p-3">
+              <p className="text-sm text-gray-500">
                 No modifiers yet. Tap any scene or character tag below to build a reusable flavor list.
               </p>
             ) : (
-              <div className="flex flex-wrap gap-2 border border-gray-200 rounded-md p-3">
-                {promptModifiers.map((modifier) => (
-                  <span
-                    key={modifier}
-                    className="inline-flex items-center gap-1 bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full"
-                  >
-                    {modifier}
-                    <button
-                      type="button"
-                      onClick={() => removeModifier(modifier)}
-                      className="text-blue-700 hover:text-blue-900"
-                      title="Remove modifier"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Prompt Structure */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Composition
-              </label>
-              <input
-                type="text"
-                list={compositionListId}
-                {...register('composition')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Wide establishing shot, over-the-shoulder action, portal doorway reveal..."
-              />
-              <datalist id={compositionListId}>
-                {COMPOSITION_OPTIONS.map((option) => (
-                  <option key={option} value={option} />
-                ))}
-              </datalist>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Lighting
-              </label>
-              <input
-                type="text"
-                list={lightingListId}
-                {...register('lighting')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Golden hour rim light, torchlit gloom, neon highlights..."
-              />
-              <datalist id={lightingListId}>
-                {LIGHTING_OPTIONS.map((option) => (
-                  <option key={option} value={option} />
-                ))}
-              </datalist>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Mood
-              </label>
-              <input
-                type="text"
-                list={moodListId}
-                {...register('mood')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Triumphant, eerie suspense, solemn aftermath..."
-              />
-              <datalist id={moodListId}>
-                {MOOD_OPTIONS.map((option) => (
-                  <option key={option} value={option} />
-                ))}
-              </datalist>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Camera
-              </label>
-              <input
-                type="text"
-                list={cameraListId}
-                {...register('camera')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="35mm lens close-up, drone top-down, cinematic dolly shot..."
-              />
-              <datalist id={cameraListId}>
-                {CAMERA_OPTIONS.map((option) => (
-                  <option key={option} value={option} />
-                ))}
-              </datalist>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Post-Processing
-              </label>
-              <input
-                type="text"
-                list={postProcessingListId}
-                {...register('postProcessing')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="High-contrast grading, painterly brushwork, film grain overlay..."
-              />
-              <datalist id={postProcessingListId}>
-                {POST_PROCESSING_OPTIONS.map((option) => (
-                  <option key={option} value={option} />
-                ))}
-              </datalist>
-            </div>
-          </div>
-
-          {/* Scene Selection */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Scene
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={sceneSearch}
-                  onChange={(e) => setSceneSearch(e.target.value)}
-                  placeholder="Search scenes..."
-                  className="px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 w-40"
-                />
-                <button
-                  type="button"
-                  onClick={() => setIsScenesModalOpen(true)}
-                  className="px-3 py-1 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 flex items-center gap-1 text-sm"
-                  title="Manage Scenes"
+              promptModifiers.map((modifier) => (
+                <span
+                  key={modifier}
+                  className="inline-flex items-center gap-1 bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full"
                 >
-                  <MapPin className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">Manage</span>
-                </button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-64 overflow-y-auto border border-gray-200 rounded-md p-3 bg-gray-50">
-              {filteredScenes.length === 0 ? (
-                <div className="col-span-full text-center py-4 text-gray-500 text-sm">
-                  {scenes.length === 0
-                    ? "No scenes available. Create one to get started!"
-                    : "No scenes match your search."}
-                </div>
-              ) : (
-                filteredScenes.map(scene => (
-                  <SelectionCard
-                    key={scene.id}
-                    title={scene.title}
-                    subtitle={scene.description}
-                    tags={parseTags(scene.tags)}
-                    isSelected={String(watchedSceneId) === String(scene.id)}
-                    onToggle={() => setValue('sceneId', String(watchedSceneId) === String(scene.id) ? '' : String(scene.id))}
-                    onTagClick={addModifier}
-                  />
-                ))
-              )}
-            </div>
-            {selectedSceneTags.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-3">
-                {selectedSceneTags.map((tag) => (
+                  {modifier}
                   <button
-                    key={tag}
                     type="button"
-                    onClick={() => addModifier(tag)}
-                    className="px-2 py-1 text-xs bg-purple-100 text-purple-800 rounded-full border border-purple-200 hover:bg-purple-200 transition"
+                    onClick={() => removeModifier(modifier)}
+                    className="text-blue-700 hover:text-blue-900"
+                    title="Remove modifier"
                   >
-                    + {tag}
+                    <span className="text-sm font-bold">×</span>
                   </button>
-                ))}
-              </div>
+                </span>
+              ))
             )}
           </div>
+        </div>
 
-          {/* Character Selection */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Characters
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={characterSearch}
-                  onChange={(e) => setCharacterSearch(e.target.value)}
-                  placeholder="Search characters..."
-                  className="px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 w-40"
-                />
-                <button
-                  type="button"
-                  onClick={() => setIsCharactersModalOpen(true)}
-                  className="px-3 py-1 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 flex items-center gap-1 text-sm"
-                  title="Manage Characters"
-                >
-                  <Users className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">Manage</span>
-                </button>
-              </div>
+        {/* Scene Selection */}
+        <div className="bg-white rounded-lg shadow p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <MapPin className="h-5 w-5 text-blue-600" />
+              <h3 className="font-semibold text-gray-800">Scene</h3>
             </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-64 overflow-y-auto border border-gray-200 rounded-md p-3 bg-gray-50">
-              {filteredCharacters.length === 0 ? (
-                <div className="col-span-full text-center py-4 text-gray-500 text-sm">
-                  {characters.length === 0
-                    ? "No characters available. Create one to get started!"
-                    : "No characters match your search."}
-                </div>
-              ) : (
-                filteredCharacters.map(character => (
-                  <SelectionCard
-                    key={character.id}
-                    title={character.name}
-                    subtitle={character.description}
-                    tags={parseTags(character.tags)}
-                    isSelected={selectedCharacters.includes(character.id)}
-                    onToggle={() => handleCharacterToggle(character.id)}
-                    onTagClick={addModifier}
-                  />
-                ))
-              )}
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={sceneSearch}
+                onChange={(e) => setSceneSearch(e.target.value)}
+                placeholder="Search..."
+                className="w-32 px-2 py-1 text-sm border rounded"
+              />
+              <button onClick={() => setIsScenesModalOpen(true)} className="text-sm text-blue-600 hover:underline">Manage</button>
             </div>
           </div>
 
-          {/* Events/Actions */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <label className="block text-sm font-medium text-gray-700">
-                Events & Actions
-              </label>
-              <button
-                type="button"
-                onClick={addEvent}
-                className="flex items-center space-x-1 text-sm text-blue-600 hover:text-blue-800"
-              >
-                <PlusCircle className="h-4 w-4" />
-                <span>Add Custom Event</span>
-              </button>
-            </div>
+          <QuickSelect
+            title="Favorites"
+            items={scenes}
+            selectedId={watchedSceneId}
+            onSelect={(id) => setValue('sceneId', String(id) === String(watchedSceneId) ? '' : String(id))}
+            storageKey="fav_scenes"
+          />
 
-            {selectedEvents.length > 0 && (
-              <div className="mb-4">
-                <p className="text-xs text-gray-500 mb-1">Selected library events</p>
-                <div className="flex flex-wrap gap-2">
-                  {selectedEvents.map((event) => (
-                    <span
-                      key={event.id}
-                      className="inline-flex items-center gap-1 bg-orange-100 text-orange-800 text-xs font-medium px-2 py-1 rounded-full"
-                    >
-                      {event.description}
-                      <button
-                        type="button"
-                        onClick={() => toggleEventSelection(event.id)}
-                        className="text-orange-700 hover:text-orange-900"
-                        title="Remove event"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </span>
-                  ))}
-                </div>
+          <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto">
+            {filteredScenes.length === 0 ? (
+              <div className="col-span-full text-center py-4 text-gray-500 text-sm">
+                {scenes.length === 0
+                  ? "No scenes available. Create one to get started!"
+                  : "No scenes match your search."}
               </div>
+            ) : (
+              filteredScenes.map(scene => (
+                <SelectionCard
+                  key={scene.id}
+                  title={scene.title}
+                  subtitle={scene.description}
+                  tags={parseTags(scene.tags)}
+                  isSelected={String(watchedSceneId) === String(scene.id)}
+                  onToggle={() => setValue('sceneId', String(watchedSceneId) === String(scene.id) ? '' : String(scene.id))}
+                  onTagClick={addModifier}
+                  className="py-2"
+                />
+              ))
             )}
+          </div>
+        </div>
 
-            <div className="border border-gray-200 rounded-lg p-3 mb-4">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
-                <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
-                  Event Library
-                </p>
+        {/* Character Selection */}
+        <div className="bg-white rounded-lg shadow p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-purple-600" />
+              <h3 className="font-semibold text-gray-800">Characters</h3>
+            </div>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={characterSearch}
+                onChange={(e) => setCharacterSearch(e.target.value)}
+                placeholder="Search..."
+                className="w-32 px-2 py-1 text-sm border rounded"
+              />
+              <button onClick={() => setIsCharactersModalOpen(true)} className="text-sm text-blue-600 hover:underline">Manage</button>
+            </div>
+          </div>
+
+          <QuickSelect
+            title="Party"
+            items={characters}
+            selectedId={null} // Quick select for chars just toggles
+            onSelect={(id) => handleCharacterToggle(id)}
+            storageKey="fav_characters"
+            renderItem={(c) => c.name}
+          />
+
+          <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto">
+            {filteredCharacters.length === 0 ? (
+              <div className="col-span-full text-center py-4 text-gray-500 text-sm">
+                {characters.length === 0
+                  ? "No characters available. Create one to get started!"
+                  : "No characters match your search."}
+              </div>
+            ) : (
+              filteredCharacters.map(char => (
+                <SelectionCard
+                  key={char.id}
+                  title={char.name}
+                  subtitle={char.description}
+                  tags={parseTags(char.tags)}
+                  isSelected={selectedCharacters.includes(char.id)}
+                  onToggle={() => handleCharacterToggle(char.id)}
+                  onTagClick={addModifier}
+                  className="py-2"
+                />
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Events */}
+        <div className="bg-white rounded-lg shadow p-4">
+          <h3 className="font-semibold text-gray-800 mb-3">Events & Actions</h3>
+
+          {/* Custom Events */}
+          <div className="space-y-2 mb-4">
+            {customEvents.map((event, index) => (
+              <div key={index} className="flex gap-2">
                 <input
                   type="text"
-                  value={eventSearch}
-                  onChange={(e) => setEventSearch(e.target.value)}
-                  placeholder="Search events by keyword or tag..."
-                  className="w-full sm:w-60 px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={event}
+                  onChange={(e) => {
+                    const newEvents = [...customEvents]
+                    newEvents[index] = e.target.value
+                    setCustomEvents(newEvents)
+                  }}
+                  className="flex-1 px-3 py-2 border rounded-md text-sm"
+                  placeholder="Describe an action..."
                 />
+                {index === customEvents.length - 1 ? (
+                  <button
+                    onClick={() => setCustomEvents([...customEvents, ''])}
+                    className="text-blue-600 hover:bg-blue-50 p-2 rounded"
+                  >
+                    <PlusCircle className="h-5 w-5" />
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setCustomEvents(customEvents.filter((_, i) => i !== index))}
+                    className="text-red-500 hover:bg-red-50 p-2 rounded"
+                  >
+                    <span className="text-xl font-bold">×</span>
+                  </button>
+                )}
               </div>
-              {filteredEventLibrary.length === 0 ? (
+            ))}
+          </div>
+
+          {/* Library Events */}
+          <div className="border-t pt-3">
+            <input
+              type="text"
+              value={eventSearch}
+              onChange={(e) => setEventSearch(e.target.value)}
+              placeholder="Search event library..."
+              className="w-full px-3 py-2 border rounded-md text-sm mb-2"
+            />
+            <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto">
+              {filteredEvents.length === 0 ? (
                 <p className="text-sm text-gray-500">
                   No events match your search yet.
                 </p>
               ) : (
-                <div className="flex flex-col gap-2 max-h-48 overflow-y-auto pr-1">
-                  {filteredEventLibrary.map((event) => {
-                    const isSelected = selectedEventIds.includes(event.id)
-                    return (
-                      <button
-                        key={event.id}
-                        type="button"
-                        onClick={() => toggleEventSelection(event.id)}
-                        className={`text-left px-3 py-2 rounded-md border transition ${isSelected
-                          ? 'border-orange-400 bg-orange-50 text-orange-800'
-                          : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
-                          }`}
-                      >
-                        <span className="block text-sm font-medium">
-                          {event.description}
-                        </span>
-                        {event.tags && (
-                          <span className="block text-xs text-gray-500 mt-1">
-                            Tags: {event.tags}
-                          </span>
-                        )}
-                      </button>
-                    )
-                  })}
-                </div>
+                filteredEvents.map(event => (
+                  <button
+                    key={event.id}
+                    type="button"
+                    onClick={() => toggleEventSelection(event.id)}
+                    className={`px-3 py-1 text-xs rounded-full border ${selectedEventIds.includes(event.id)
+                      ? 'bg-orange-100 border-orange-300 text-orange-800'
+                      : 'bg-gray-50 border-gray-200 text-gray-600 hover:border-gray-300'
+                      }`}
+                  >
+                    {event.description}
+                  </button>
+                ))
               )}
             </div>
-
-            <div className="space-y-2">
-              {customEvents.map((event, index) => (
-                <div key={index} className="flex items-center space-x-2">
-                  <input
-                    type="text"
-                    value={event}
-                    onChange={(e) => updateEvent(index, e.target.value)}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder={`Custom event ${index + 1}...`}
-                  />
-                  {customEvents.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => removeEvent(index)}
-                      className="text-red-500 hover:text-red-700"
-                      title="Remove custom event"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* AI Style */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              AI Style (Optional)
-            </label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <select
-                  {...register('stylePreset')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Choose a style preset...</option>
-                  {STYLE_PRESETS.map((preset) => (
-                    <option key={preset.value} value={preset.value}>
-                      {preset.label}
-                    </option>
-                  ))}
-                </select>
-                {selectedPresetDetails && (
-                  <p className="mt-2 text-xs text-gray-500">
-                    {selectedPresetDetails.value}
-                  </p>
-                )}
-              </div>
-              <div>
-                <input
-                  type="text"
-                  {...register('aiStyle')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Add tweaks or stack additional style cues..."
-                />
-                <p className="mt-2 text-xs text-gray-500">
-                  The preset feeds structure; use this box for per-shot adjustments.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Submit Buttons */}
-          <div className="flex items-center space-x-4">
-            <button
-              type="submit"
-              disabled={isGenerating}
-              className="flex items-center space-x-2 px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed lg:hidden"
-            >
-              <Sparkles className="h-4 w-4" />
-              <span>{isGenerating ? 'Generating...' : 'Generate Template'}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={clearForm}
-              className="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
-            >
-              Clear Form
-            </button>
-          </div>
-        </form>
-      </div>
-
-      {/* Quick uploader for small screens */}
-      <div className="lg:hidden space-y-6">
-        <ImageDropzone />
-      </div>
-
-      {/* Generated Template */}
-      {generatedTemplate && (
-        <div className="lg:col-span-2 bg-white rounded-lg shadow p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">
-              Generated Template
-            </h3>
-            <button
-              onClick={copyToClipboard}
-              className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
-            >
-              <Copy className="h-4 w-4" />
-              <span>Copy</span>
-            </button>
-          </div>
-
-          <div className="bg-gray-50 rounded-md p-4">
-            <pre className="whitespace-pre-wrap text-sm text-gray-800 font-mono">
-              {generatedTemplate}
-            </pre>
-          </div>
-
-          <div className="mt-4 text-sm text-gray-600">
-            <p>Copy this template and paste it into your AI image generator (DALL-E, Midjourney, Stable Diffusion, etc.)</p>
           </div>
         </div>
-      )}
+
+        {/* Style & Modifiers */}
+        <div className="bg-white rounded-lg shadow p-4">
+          <h3 className="font-semibold text-gray-800 mb-4">Style & Atmosphere</h3>
+
+          <ModifierChips
+            label="Composition"
+            options={COMPOSITION_OPTIONS}
+            value={watch('composition')}
+            onChange={(val) => setValue('composition', val)}
+          />
+
+          <ModifierChips
+            label="Lighting"
+            options={LIGHTING_OPTIONS}
+            value={watch('lighting')}
+            onChange={(val) => setValue('lighting', val)}
+          />
+
+          <ModifierChips
+            label="Mood"
+            options={MOOD_OPTIONS}
+            value={watch('mood')}
+            onChange={(val) => setValue('mood', val)}
+          />
+
+          <div className="grid grid-cols-2 gap-4 mt-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Camera</label>
+              <input
+                type="text"
+                list="camera-options"
+                {...register('camera')}
+                className="w-full px-3 py-2 border rounded-md text-sm"
+              />
+              <datalist id="camera-options">
+                {CAMERA_OPTIONS.map(opt => <option key={opt} value={opt} />)}
+              </datalist>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Post-Processing</label>
+              <input
+                type="text"
+                list="pp-options"
+                {...register('postProcessing')}
+                className="w-full px-3 py-2 border rounded-md text-sm"
+              />
+              <datalist id="pp-options">
+                {POST_PROCESSING_OPTIONS.map(opt => <option key={opt} value={opt} />)}
+              </datalist>
+            </div>
+          </div>
+
+          <div className="mt-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Style Preset</label>
+            <select
+              {...register('stylePreset')}
+              className="w-full px-3 py-2 border rounded-md text-sm"
+            >
+              <option value="">None</option>
+              {STYLE_PRESETS.map(p => (
+                <option key={p.value} value={p.value}>{p.label}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="mt-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">AI Style Adjustments</label>
+            <input
+              type="text"
+              {...register('aiStyle')}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              placeholder="Add tweaks or stack additional style cues..."
+            />
+            <p className="mt-2 text-xs text-gray-500">
+              The preset feeds structure; use this box for per-shot adjustments.
+            </p>
+          </div>
+        </div>
+
+        {/* Clear Form Button */}
+        <div className="bg-white rounded-lg shadow p-4">
+          <button
+            type="button"
+            onClick={clearForm}
+            className="w-full px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
+          >
+            Clear Form
+          </button>
+        </div>
+      </div>
+
+      {/* RIGHT COLUMN: Preview (Fixed) */}
+      <div className="lg:w-[450px] flex-shrink-0 flex flex-col gap-4 h-full pb-20 lg:pb-0">
+        <div className="bg-white rounded-lg shadow p-4 flex-1 flex flex-col min-h-0">
+          <PromptPreview
+            promptText={generatedPreview}
+            onGenerate={handleSubmit(onSubmit)}
+            isGenerating={isGenerating}
+            className="flex-1"
+          />
+        </div>
+
+        {/* Quick Uploader for convenience */}
+        <div className="bg-white rounded-lg shadow p-4 flex-shrink-0">
+          <h3 className="text-sm font-semibold text-gray-700 mb-2">Reference Image</h3>
+          <ImageDropzone />
+        </div>
+      </div>
 
       {/* Modals */}
       <Modal
         title="Manage Scenes"
         isOpen={isScenesModalOpen}
-        onClose={async () => { setIsScenesModalOpen(false); await refreshLists(); }}
+        onClose={() => setIsScenesModalOpen(false)}
         widthClass="max-w-4xl"
       >
         <SceneModal
-          onClose={() => setIsScenesModalOpen(false)}
-          onSaved={refreshLists}
+          onClose={() => { setIsScenesModalOpen(false); loadScenes(); }}
+          onSaved={loadScenes}
         />
       </Modal>
 
       <Modal
         title="Manage Characters"
         isOpen={isCharactersModalOpen}
-        onClose={async () => { setIsCharactersModalOpen(false); await refreshLists(); }}
+        onClose={() => setIsCharactersModalOpen(false)}
         widthClass="max-w-4xl"
       >
         <CharacterModal
-          onClose={() => setIsCharactersModalOpen(false)}
-          onSaved={refreshLists}
+          onClose={() => { setIsCharactersModalOpen(false); loadCharacters(); }}
+          onSaved={loadCharacters}
         />
       </Modal>
     </div>
