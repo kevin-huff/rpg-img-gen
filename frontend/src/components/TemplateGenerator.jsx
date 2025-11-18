@@ -10,165 +10,15 @@ import SceneModal from './SceneModal'
 import CharacterModal from './CharacterModal'
 import ImageDropzone from './ImageDropzone'
 
-const STYLE_PRESETS = [
-  {
-    label: 'Cinematic',
-    value: 'cinematic film still, dramatic lighting, rich depth of field'
-  },
-  {
-    label: 'Silver Age Comic',
-    value: 'silver age comic panel, ben-day dots, bold black inking, flat CMYK palette'
-  },
-  {
-    label: 'Modern Graphic Novel',
-    value: 'modern graphic novel spread, layered digital shading, textured gradients, moody rim light'
-  },
-  {
-    label: 'Superhero Splash Page',
-    value: 'dynamic superhero splash page, exaggerated foreshortening, kinetic speed lines, explosive impact bursts'
-  },
-  {
-    label: 'Noir Comic',
-    value: 'noir graphic novel styling, heavy chiaroscuro, rain-soaked alley light, selective spot color'
-  },
-  {
-    label: 'Kirby Cosmic',
-    value: 'jack kirby-inspired cosmic comic art, thick contour lines, kirby crackle energy bubbles, high-saturation hues'
-  },
-  {
-    label: 'Manga Inked',
-    value: 'shonen manga double spread, crisp screentones, dynamic speed lines, expressive ink wash shadows'
-  },
-  {
-    label: 'Neon Cyberpunk Comic',
-    value: 'cyberpunk comic panel, neon rim lights, holographic signage, wet asphalt reflections'
-  },
-  {
-    label: 'Painterly',
-    value: 'painterly illustration, expressive brushstrokes, layered pigments'
-  },
-  {
-    label: 'Dark Fantasy',
-    value: 'dark fantasy concept art, moody atmosphere, intricate gothic detail'
-  },
-  {
-    label: 'Retro Sci-Fi',
-    value: 'retro sci-fi pulp cover, neon gradients, chrome highlights'
-  },
-  {
-    label: 'Western Splash',
-    value: 'western comic splash page, sun-bleached palette, dusty motion trails, cinematic lens flare'
-  },
-  {
-    label: 'Indie Risograph',
-    value: 'indie risograph comic aesthetic, duotone ink, grainy halftones, off-register charm'
-  }
-]
-
-const COMPOSITION_OPTIONS = [
-  'Wide establishing shot',
-  'Over-the-shoulder action',
-  'Intimate portrait',
-  'Two-shot standoff',
-  'Crowd chaos with central hero',
-  'Low-angle power pose',
-  'High-angle vulnerability',
-  'Rule-of-thirds hero off-center',
-  'Symmetrical corridor framing',
-  'Dutch angle tension',
-  'Foreground occlusion peeking',
-  'Depth-stacked silhouettes',
-  'Vignette spotlight on subject',
-  'Tracking run-and-gun feel',
-  'Tabletop tactical map close-up',
-  'Crossfire triangulation',
-  'Portal doorway reveal',
-  'Mirror or puddle reflection frame'
-]
-
-const LIGHTING_OPTIONS = [
-  'Golden hour rim light',
-  'Cold moonlight with mist',
-  'Torchlit glow and soot',
-  'Neon spill from signs',
-  'Volumetric god rays',
-  'Strobe burst in darkness',
-  'Overcast softbox sky',
-  'Backlit silhouette flare',
-  'Candle cluster warmth',
-  'Lightning flash accents',
-  'Bi-color teal and amber',
-  'Harsh interrogation top-light',
-  'Under-lighting campfire',
-  'Flickering CRT spill',
-  'Subterranean bioluminescence',
-  'Spell aura bloom',
-  'Emergency red strobes',
-  'Starfield key with soft fill'
-]
-
-const MOOD_OPTIONS = [
-  'Triumphant',
-  'Eerie suspense',
-  'Solemn',
-  'Desperate last stand',
-  'Grim resolve',
-  'Whimsical mischief',
-  'Sacred awe',
-  'Paranoid dread',
-  'Stoic determination',
-  'Melancholy quiet',
-  'Ferocious blood-rush',
-  'Hopeful respite',
-  'Shock and disbelief',
-  'Righteous fury',
-  'Tense negotiation',
-  'Black comedy',
-  'Noble sacrifice',
-  'Wild exultation'
-]
-
-const CAMERA_OPTIONS = [
-  '35mm lens close-up',
-  '24mm wide hero shot',
-  '85mm portrait compression',
-  '14mm ultra-wide cavern',
-  'Macro detail insert',
-  'Drone top-down',
-  'Low dolly push-in',
-  'Handheld jitter chase',
-  'Static tripod tableau',
-  'Crane rise reveal',
-  'Rack focus pull',
-  'Long exposure motion smear',
-  'Slow shutter torch trails',
-  'Overcranked slow motion',
-  'POV helmet cam',
-  'Gimbal glide through doorway',
-  'Tilt-shift miniatures',
-  'Fisheye claustrophobia'
-]
-
-const POST_PROCESSING_OPTIONS = [
-  'High-contrast grading',
-  'Painterly brush texture',
-  'Film grain and gate weave',
-  'Bleach bypass steel',
-  'Soft bloom and halation',
-  'Cross-process retro',
-  'Sepia parchment age',
-  'Cool shadows warm highlights',
-  'Split-toned dusk',
-  'Vignette and subtle chromatic aberration',
-  'CRT scanline composite',
-  'Inked comic outlines',
-  'Watercolor wash edges',
-  'Desaturated war grime',
-  'Neon synthwave glow',
-  'Photochemical print fade',
-  'Gritty LUT with crushed blacks',
-  'Clean HDR pop'
-]
+import {
+  STYLE_PRESETS,
+  COMPOSITION_OPTIONS,
+  LIGHTING_OPTIONS,
+  MOOD_OPTIONS,
+  CAMERA_OPTIONS,
+  POST_PROCESSING_OPTIONS
+} from '../constants/options'
+import SelectionCard from './SelectionCard'
 
 const parseTags = (tagString) => {
   if (!tagString) return []
@@ -202,6 +52,8 @@ export default function TemplateGenerator() {
   const [characters, setCharacters] = useState([])
   const [eventLibrary, setEventLibrary] = useState([])
   const [eventSearch, setEventSearch] = useState('')
+  const [sceneSearch, setSceneSearch] = useState('')
+  const [characterSearch, setCharacterSearch] = useState('')
   const [selectedCharacters, setSelectedCharacters] = useState([])
   const [selectedEventIds, setSelectedEventIds] = useState([])
   const [customEvents, setCustomEvents] = useState([''])
@@ -325,7 +177,7 @@ export default function TemplateGenerator() {
   }, [prefill, reset, clearPrefill])
 
   const handleCharacterToggle = (characterId) => {
-    setSelectedCharacters(prev => 
+    setSelectedCharacters(prev =>
       prev.includes(characterId)
         ? prev.filter(id => id !== characterId)
         : [...prev, characterId]
@@ -345,7 +197,7 @@ export default function TemplateGenerator() {
   }
 
   const toggleEventSelection = (eventId) => {
-    setSelectedEventIds(prev => 
+    setSelectedEventIds(prev =>
       prev.includes(eventId)
         ? prev.filter(id => id !== eventId)
         : [...prev, eventId]
@@ -386,6 +238,28 @@ export default function TemplateGenerator() {
     })
   }, [eventLibrary, eventSearch])
 
+  const filteredScenes = useMemo(() => {
+    const query = sceneSearch.trim().toLowerCase()
+    if (!query) return scenes
+    return scenes.filter((scene) => {
+      const title = scene.title?.toLowerCase() || ''
+      const description = scene.description?.toLowerCase() || ''
+      const tags = scene.tags?.toLowerCase() || ''
+      return title.includes(query) || description.includes(query) || tags.includes(query)
+    })
+  }, [scenes, sceneSearch])
+
+  const filteredCharacters = useMemo(() => {
+    const query = characterSearch.trim().toLowerCase()
+    if (!query) return characters
+    return characters.filter((char) => {
+      const name = char.name?.toLowerCase() || ''
+      const description = char.description?.toLowerCase() || ''
+      const tags = char.tags?.toLowerCase() || ''
+      return name.includes(query) || description.includes(query) || tags.includes(query)
+    })
+  }, [characters, characterSearch])
+
   const selectedPresetDetails = useMemo(() => {
     if (!watchedStylePreset) return null
     return STYLE_PRESETS.find((preset) => preset.value === watchedStylePreset) || null
@@ -393,7 +267,7 @@ export default function TemplateGenerator() {
 
   const onSubmit = async (data) => {
     setIsGenerating(true)
-    
+
     try {
       const templateData = {
         title: data.title,
@@ -428,7 +302,7 @@ export default function TemplateGenerator() {
       } else {
         toast.error('No template text returned')
       }
-      
+
     } catch (error) {
       console.error('Failed to generate template:', error)
       toast.error('Failed to generate template')
@@ -454,6 +328,8 @@ export default function TemplateGenerator() {
     setCustomEvents([''])
     setPromptModifiers([])
     setEventSearch('')
+    setSceneSearch('')
+    setCharacterSearch('')
     setGeneratedTemplate('')
   }
 
@@ -619,30 +495,50 @@ export default function TemplateGenerator() {
 
           {/* Scene Selection */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Scene
-            </label>
-            <div className="flex gap-2">
-              <select
-                {...register('sceneId')}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Select a scene...</option>
-                {scenes.map(scene => (
-                  <option key={scene.id} value={scene.id}>
-                    {scene.title}
-                  </option>
-                ))}
-              </select>
-              <button
-                type="button"
-                onClick={() => setIsScenesModalOpen(true)}
-                className="px-3 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 flex items-center gap-1"
-                title="Manage Scenes"
-              >
-                <MapPin className="h-4 w-4" />
-                <span className="hidden sm:inline">Manage</span>
-              </button>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Scene
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={sceneSearch}
+                  onChange={(e) => setSceneSearch(e.target.value)}
+                  placeholder="Search scenes..."
+                  className="px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 w-40"
+                />
+                <button
+                  type="button"
+                  onClick={() => setIsScenesModalOpen(true)}
+                  className="px-3 py-1 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 flex items-center gap-1 text-sm"
+                  title="Manage Scenes"
+                >
+                  <MapPin className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Manage</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-64 overflow-y-auto border border-gray-200 rounded-md p-3 bg-gray-50">
+              {filteredScenes.length === 0 ? (
+                <div className="col-span-full text-center py-4 text-gray-500 text-sm">
+                  {scenes.length === 0
+                    ? "No scenes available. Create one to get started!"
+                    : "No scenes match your search."}
+                </div>
+              ) : (
+                filteredScenes.map(scene => (
+                  <SelectionCard
+                    key={scene.id}
+                    title={scene.title}
+                    subtitle={scene.description}
+                    tags={parseTags(scene.tags)}
+                    isSelected={String(watchedSceneId) === String(scene.id)}
+                    onToggle={() => setValue('sceneId', String(watchedSceneId) === String(scene.id) ? '' : String(scene.id))}
+                    onTagClick={addModifier}
+                  />
+                ))
+              )}
             </div>
             {selectedSceneTags.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-3">
@@ -662,72 +558,51 @@ export default function TemplateGenerator() {
 
           {/* Character Selection */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Characters
-            </label>
             <div className="flex items-center justify-between mb-2">
-              <p className="text-xs text-gray-500">Select one or more characters</p>
-              <button
-                type="button"
-                onClick={() => setIsCharactersModalOpen(true)}
-                className="px-3 py-1.5 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 flex items-center gap-1 text-sm"
-                title="Manage Characters"
-              >
-                <Users className="h-4 w-4" />
-                <span className="hidden sm:inline">Manage</span>
-              </button>
+              <label className="block text-sm font-medium text-gray-700">
+                Characters
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={characterSearch}
+                  onChange={(e) => setCharacterSearch(e.target.value)}
+                  placeholder="Search characters..."
+                  className="px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 w-40"
+                />
+                <button
+                  type="button"
+                  onClick={() => setIsCharactersModalOpen(true)}
+                  className="px-3 py-1 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 flex items-center gap-1 text-sm"
+                  title="Manage Characters"
+                >
+                  <Users className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Manage</span>
+                </button>
+              </div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-56 overflow-y-auto border border-gray-200 rounded-md p-3">
-              {characters.map((character) => {
-                const characterTags = parseTags(character.tags)
-                const isSelected = selectedCharacters.includes(character.id)
-                return (
-                  <div
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-64 overflow-y-auto border border-gray-200 rounded-md p-3 bg-gray-50">
+              {filteredCharacters.length === 0 ? (
+                <div className="col-span-full text-center py-4 text-gray-500 text-sm">
+                  {characters.length === 0
+                    ? "No characters available. Create one to get started!"
+                    : "No characters match your search."}
+                </div>
+              ) : (
+                filteredCharacters.map(character => (
+                  <SelectionCard
                     key={character.id}
-                    className={`rounded-md border p-2 transition ${
-                      isSelected ? 'border-blue-400 bg-blue-50' : 'border-gray-200 bg-white'
-                    }`}
-                  >
-                    <label
-                      htmlFor={`character-${character.id}`}
-                      className="flex items-center space-x-2 cursor-pointer"
-                    >
-                      <input
-                        id={`character-${character.id}`}
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => handleCharacterToggle(character.id)}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      />
-                      <span className="text-sm text-gray-700 font-medium">{character.name}</span>
-                    </label>
-                    {characterTags.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {characterTags.map((tag) => (
-                          <button
-                            key={`${character.id}-${tag}`}
-                            type="button"
-                            onClick={(e) => {
-                              e.preventDefault()
-                              e.stopPropagation()
-                              addModifier(tag)
-                            }}
-                            className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full border border-green-200 hover:bg-green-200"
-                          >
-                            + {tag}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
+                    title={character.name}
+                    subtitle={character.description}
+                    tags={parseTags(character.tags)}
+                    isSelected={selectedCharacters.includes(character.id)}
+                    onToggle={() => handleCharacterToggle(character.id)}
+                    onTagClick={addModifier}
+                  />
+                ))
+              )}
             </div>
-            {characters.length === 0 && (
-              <p className="text-sm text-gray-500 mt-2">
-                No characters available. Create some characters first.
-              </p>
-            )}
           </div>
 
           {/* Events/Actions */}
@@ -796,11 +671,10 @@ export default function TemplateGenerator() {
                         key={event.id}
                         type="button"
                         onClick={() => toggleEventSelection(event.id)}
-                        className={`text-left px-3 py-2 rounded-md border transition ${
-                          isSelected
-                            ? 'border-orange-400 bg-orange-50 text-orange-800'
-                            : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
-                        }`}
+                        className={`text-left px-3 py-2 rounded-md border transition ${isSelected
+                          ? 'border-orange-400 bg-orange-50 text-orange-800'
+                          : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                          }`}
                       >
                         <span className="block text-sm font-medium">
                           {event.description}
@@ -890,7 +764,7 @@ export default function TemplateGenerator() {
               <Sparkles className="h-4 w-4" />
               <span>{isGenerating ? 'Generating...' : 'Generate Template'}</span>
             </button>
-            
+
             <button
               type="button"
               onClick={clearForm}
@@ -922,13 +796,13 @@ export default function TemplateGenerator() {
               <span>Copy</span>
             </button>
           </div>
-          
+
           <div className="bg-gray-50 rounded-md p-4">
             <pre className="whitespace-pre-wrap text-sm text-gray-800 font-mono">
               {generatedTemplate}
             </pre>
           </div>
-          
+
           <div className="mt-4 text-sm text-gray-600">
             <p>Copy this template and paste it into your AI image generator (DALL-E, Midjourney, Stable Diffusion, etc.)</p>
           </div>
