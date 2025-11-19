@@ -6,7 +6,7 @@ export default function SceneModal({ onClose, onSaved }) {
   return (
     <div>
       {/* We reuse the full SceneManager; the user can close the modal when done. */}
-      <SceneManager />
+      <SceneManager onSceneChanged={onSaved} />
       <div className="mt-4 flex justify-end">
         <button
           onClick={() => { onSaved?.(); onClose?.(); }}

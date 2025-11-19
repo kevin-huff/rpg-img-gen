@@ -5,7 +5,7 @@ import { PlusCircle, Edit, Trash2, Users, Save, X, Copy } from 'lucide-react'
 
 import { charactersAPI } from '../services/api'
 
-export default function CharacterManager() {
+export default function CharacterManager({ onCharacterChanged }) {
   const [characters, setCharacters] = useState([])
   const [editingCharacter, setEditingCharacter] = useState(null)
   const [showForm, setShowForm] = useState(false)
@@ -30,7 +30,7 @@ export default function CharacterManager() {
     try {
       if (editingCharacter) {
         const response = await charactersAPI.update(editingCharacter.id, data)
-        setCharacters(prev => prev.map(character => 
+        setCharacters(prev => prev.map(character =>
           character.id === editingCharacter.id ? response.data : character
         ))
         toast.success('Character updated successfully!')
@@ -39,8 +39,9 @@ export default function CharacterManager() {
         setCharacters(prev => [response.data, ...prev])
         toast.success('Character created successfully!')
       }
-      
+
       handleCancel()
+      onCharacterChanged?.()
     } catch (error) {
       console.error('Failed to save character:', error)
       toast.error('Failed to save character')
@@ -67,6 +68,7 @@ export default function CharacterManager() {
       await charactersAPI.delete(id)
       setCharacters(prev => prev.filter(character => character.id !== id))
       toast.success('Character deleted successfully!')
+      onCharacterChanged?.()
     } catch (error) {
       console.error('Failed to delete character:', error)
       toast.error('Failed to delete character')
@@ -79,6 +81,7 @@ export default function CharacterManager() {
       const newCharacter = response.data
       setCharacters(prev => [newCharacter, ...prev])
       toast.success('Character duplicated!')
+      onCharacterChanged?.()
 
       // Open the form pre-filled with the duplicated character for quick edits
       setEditingCharacter(newCharacter)
@@ -127,7 +130,7 @@ export default function CharacterManager() {
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               {editingCharacter ? 'Edit Character' : 'Create New Character'}
             </h3>
-            
+
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -229,7 +232,7 @@ export default function CharacterManager() {
                     <h3 className="font-semibold text-gray-900 mb-2">
                       {character.name}
                     </h3>
-                    
+
                     <div className="space-y-2 mb-3">
                       <div>
                         <span className="text-xs font-medium text-gray-500 uppercase">Description</span>
@@ -237,7 +240,7 @@ export default function CharacterManager() {
                           {character.description}
                         </p>
                       </div>
-                      
+
                       {character.appearance && (
                         <div>
                           <span className="text-xs font-medium text-gray-500 uppercase">Appearance</span>
@@ -260,7 +263,7 @@ export default function CharacterManager() {
                         ))}
                       </div>
                     )}
-                    
+
                     <p className="text-xs text-gray-400">
                       Created {new Date(character.created_at).toLocaleDateString()}
                       {character.updated_at !== character.created_at && (
@@ -268,7 +271,7 @@ export default function CharacterManager() {
                       )}
                     </p>
                   </div>
-                  
+
                   <div className="flex space-x-2 ml-4">
                     <button
                       onClick={() => handleEdit(character)}

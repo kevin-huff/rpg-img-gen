@@ -6,7 +6,7 @@ export default function CharacterModal({ onClose, onSaved }) {
   return (
     <div>
       {/* We reuse the full CharacterManager; the user can close the modal when done. */}
-      <CharacterManager />
+      <CharacterManager onCharacterChanged={onSaved} />
       <div className="mt-4 flex justify-end">
         <button
           onClick={() => { onSaved?.(); onClose?.(); }}

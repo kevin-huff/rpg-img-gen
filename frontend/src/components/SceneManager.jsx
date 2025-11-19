@@ -5,7 +5,7 @@ import { PlusCircle, Edit, Trash2, MapPin, Save, X, Copy } from 'lucide-react'
 
 import { scenesAPI } from '../services/api'
 
-export default function SceneManager() {
+export default function SceneManager({ onSceneChanged }) {
   const [scenes, setScenes] = useState([])
   const [editingScene, setEditingScene] = useState(null)
   const [showForm, setShowForm] = useState(false)
@@ -30,7 +30,7 @@ export default function SceneManager() {
     try {
       if (editingScene) {
         const response = await scenesAPI.update(editingScene.id, data)
-        setScenes(prev => prev.map(scene => 
+        setScenes(prev => prev.map(scene =>
           scene.id === editingScene.id ? response.data : scene
         ))
         toast.success('Scene updated successfully!')
@@ -39,8 +39,9 @@ export default function SceneManager() {
         setScenes(prev => [response.data, ...prev])
         toast.success('Scene created successfully!')
       }
-      
+
       handleCancel()
+      onSceneChanged?.()
     } catch (error) {
       console.error('Failed to save scene:', error)
       toast.error('Failed to save scene')
@@ -66,6 +67,7 @@ export default function SceneManager() {
       await scenesAPI.delete(id)
       setScenes(prev => prev.filter(scene => scene.id !== id))
       toast.success('Scene deleted successfully!')
+      onSceneChanged?.()
     } catch (error) {
       console.error('Failed to delete scene:', error)
       toast.error('Failed to delete scene')
@@ -78,6 +80,7 @@ export default function SceneManager() {
       const newScene = response.data
       setScenes(prev => [newScene, ...prev])
       toast.success('Scene duplicated!')
+      onSceneChanged?.()
 
       // Open the form pre-filled with the duplicated scene for quick edits
       setEditingScene(newScene)
@@ -125,7 +128,7 @@ export default function SceneManager() {
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               {editingScene ? 'Edit Scene' : 'Create New Scene'}
             </h3>
-            
+
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -234,7 +237,7 @@ export default function SceneManager() {
                       )}
                     </p>
                   </div>
-                  
+
                   <div className="flex space-x-2 ml-4">
                     <button
                       onClick={() => handleEdit(scene)}

@@ -116,7 +116,12 @@ export default function TemplateGenerator() {
   const loadCharacters = async () => {
     try {
       const response = await charactersAPI.getAll({ limit: 100 })
-      setCharacters(response.data)
+      if (Array.isArray(response.data)) {
+        setCharacters(response.data)
+      } else {
+        console.error('Invalid characters response:', response.data)
+        setCharacters([])
+      }
     } catch (error) {
       console.error('Failed to load characters:', error)
       toast.error('Failed to load characters')
