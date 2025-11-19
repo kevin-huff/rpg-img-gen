@@ -77,8 +77,8 @@ export default function QuickSelect({
                             onClick={() => onSelect(fav.id)}
                             className={`
                 flex items-center gap-1 px-2 py-1 rounded text-xs border whitespace-nowrap max-w-[120px]
-                ${String(selectedId) === String(fav.id)
-                                    ? 'bg-blue-100 text-blue-800 border-blue-300'
+                ${(Array.isArray(selectedId) ? selectedId.includes(fav.id) : String(selectedId) === String(fav.id))
+                                    ? 'bg-blue-100 text-blue-800 border-blue-300 ring-1 ring-blue-300'
                                     : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'
                                 }
               `}

@@ -32,14 +32,15 @@ const templateSchema = Joi.object({
   mood: Joi.string().allow('').max(500).default(''),
   camera: Joi.string().allow('').max(500).default(''),
   postProcessing: Joi.string().allow('').max(500).default(''),
-  modifiers: Joi.array().items(Joi.string().max(200)).default([])
+  modifiers: Joi.array().items(Joi.string().max(200)).default([]),
+  characterPositions: Joi.object().pattern(Joi.string(), Joi.string().max(100)).default({})
 });
 
 // GET /api/templates - List all templates
 router.get('/', (req, res) => {
   const db = getDatabase();
   const { limit = 20, offset = 0 } = req.query;
-  
+
   const sql = `
     SELECT t.*, s.title as scene_title 
     FROM templates t 
@@ -47,7 +48,7 @@ router.get('/', (req, res) => {
     ORDER BY t.created_at DESC 
     LIMIT ? OFFSET ?
   `;
-  
+
   db.all(sql, [parseInt(limit), parseInt(offset)], (err, rows) => {
     if (err) {
       console.error('Error fetching templates:', err);
@@ -69,14 +70,14 @@ router.get('/', (req, res) => {
 router.get('/:id', (req, res) => {
   const db = getDatabase();
   const { id } = req.params;
-  
+
   const sql = `
     SELECT t.*, s.title as scene_title, s.description as scene_description
     FROM templates t 
     LEFT JOIN scenes s ON t.scene_id = s.id 
     WHERE t.id = ?
   `;
-  
+
   db.get(sql, [id], (err, row) => {
     if (err) {
       console.error('Error fetching template:', err);
@@ -104,7 +105,7 @@ router.post('/generate', async (req, res) => {
   if (error) {
     return res.status(400).json({ error: error.details[0].message });
   }
-  
+
   const db = getDatabase();
   const {
     title,
@@ -120,9 +121,10 @@ router.post('/generate', async (req, res) => {
     mood,
     camera,
     postProcessing,
-    modifiers
+    modifiers,
+    characterPositions
   } = value;
-  
+
   try {
     // Fetch scene data if provided
     let sceneData = null;
@@ -134,7 +136,7 @@ router.post('/generate', async (req, res) => {
         });
       });
     }
-    
+
     // Fetch character data if provided
     let charactersData = [];
     if (characterIds.length > 0) {
@@ -146,7 +148,7 @@ router.post('/generate', async (req, res) => {
         });
       });
     }
-    
+
     // Fetch event data if provided
     let eventsData = [];
     if (eventIds.length > 0) {
@@ -166,7 +168,7 @@ router.post('/generate', async (req, res) => {
 
     // Generate the template text
     let templateText = '';
-    
+
     // Add custom prompt if provided
     if (customPrompt) {
       templateText += customPrompt + '\n\n';
@@ -176,13 +178,13 @@ router.post('/generate', async (req, res) => {
     if (modifiers.length > 0) {
       templateText += `Modifiers: ${modifiers.join(', ')}\n\n`;
     }
-    
+
     // Add scene information
     if (sceneData) {
       templateText += `Scene: ${sceneData.title}\n`;
       templateText += `${sceneData.description}\n\n`;
     }
-    
+
     // Add character information
     if (charactersData.length > 0) {
       templateText += 'Characters:\n';
@@ -191,6 +193,12 @@ router.post('/generate', async (req, res) => {
         if (char.appearance) {
           templateText += ` (Appearance: ${char.appearance})`;
         }
+
+        const position = characterPositions[char.id];
+        if (position) {
+          templateText += ` [Position: ${position}]`;
+        }
+
         templateText += '\n';
       });
       templateText += '\n';
@@ -233,11 +241,11 @@ router.post('/generate', async (req, res) => {
 
     // Clean up the template
     templateText = templateText.trim();
-    
+
     if (!templateText) {
       return res.status(400).json({ error: 'Generated template is empty. Please provide some content.' });
     }
-    
+
     // Save the template to database
     const insertSql = `
       INSERT INTO templates (title, template_text, scene_id, character_ids, event_ids, ai_style, input_snapshot) 
@@ -258,7 +266,8 @@ router.post('/generate', async (req, res) => {
       mood,
       camera,
       postProcessing,
-      modifiers
+      modifiers,
+      characterPositions
     });
 
     db.run(insertSql, [
@@ -269,14 +278,14 @@ router.post('/generate', async (req, res) => {
       JSON.stringify(eventIds),
       aiStyle || '',
       inputSnapshot
-    ], function(err) {
+    ], function (err) {
       if (err) {
         console.error('Error saving template:', err);
         return res.status(500).json({ error: 'Failed to save template' });
       }
-      
+
       const templateId = this.lastID;
-      
+
       // Emit socket event for real-time updates
       const parsedSnapshot = JSON.parse(inputSnapshot);
 
@@ -293,7 +302,7 @@ router.post('/generate', async (req, res) => {
           timestamp: new Date().toISOString()
         });
       }
-      
+
       res.status(201).json({
         id: templateId,
         title: title || `Template ${new Date().toISOString()}`,
@@ -314,7 +323,7 @@ router.post('/generate', async (req, res) => {
         inputSnapshot: parsedSnapshot
       });
     });
-    
+
   } catch (err) {
     console.error('Error generating template:', err);
     res.status(500).json({ error: 'Failed to generate template' });
@@ -325,17 +334,17 @@ router.post('/generate', async (req, res) => {
 router.delete('/:id', (req, res) => {
   const db = getDatabase();
   const { id } = req.params;
-  
-  db.run('DELETE FROM templates WHERE id = ?', [id], function(err) {
+
+  db.run('DELETE FROM templates WHERE id = ?', [id], function (err) {
     if (err) {
       console.error('Error deleting template:', err);
       return res.status(500).json({ error: 'Failed to delete template' });
     }
-    
+
     if (this.changes === 0) {
       return res.status(404).json({ error: 'Template not found' });
     }
-    
+
     res.json({ message: 'Template deleted successfully' });
   });
 });

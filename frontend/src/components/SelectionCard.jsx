@@ -8,6 +8,8 @@ export default function SelectionCard({
     isSelected,
     onToggle,
     onTagClick,
+    position,
+    onPositionChange,
     className = ''
 }) {
     return (
@@ -66,6 +68,25 @@ export default function SelectionCard({
                             {tag}
                         </button>
                     ))}
+                </div>
+            )}
+
+            {isSelected && onPositionChange && (
+                <div className="mt-3 pt-2 border-t border-blue-200" onClick={(e) => e.stopPropagation()}>
+                    <label className="block text-xs font-medium text-blue-800 mb-1">Position</label>
+                    <select
+                        value={position || ''}
+                        onChange={(e) => onPositionChange(e.target.value)}
+                        className="w-full text-xs border-blue-300 rounded focus:ring-blue-500 focus:border-blue-500 text-gray-700 py-1"
+                    >
+                        <option value="">Default (None)</option>
+                        <option value="Left">Left</option>
+                        <option value="Center">Center</option>
+                        <option value="Right">Right</option>
+                        <option value="Foreground">Foreground</option>
+                        <option value="Background">Background</option>
+                        <option value="Dynamic">Dynamic Action</option>
+                    </select>
                 </div>
             )}
         </div>
