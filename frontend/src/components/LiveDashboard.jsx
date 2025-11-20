@@ -25,11 +25,17 @@ export default function LiveDashboard({
 
     // Handle Narrative Parsing
     const handleParse = (result) => {
+        console.log('Magic Box Parse Result:', result);
+        console.log('Available Scenes:', scenes.length);
+        console.log('Available Characters:', characters.length);
+
         if (result.matchedSceneId) {
+            console.log('Setting Scene ID:', result.matchedSceneId);
             setSelectedSceneId(result.matchedSceneId);
         }
 
         if (result.matchedCharacterIds.length > 0) {
+            console.log('Setting Character IDs:', result.matchedCharacterIds);
             // Merge with existing selections or replace?
             // For "Magic Box" feel, maybe add them?
             // Let's add them for now, avoiding duplicates

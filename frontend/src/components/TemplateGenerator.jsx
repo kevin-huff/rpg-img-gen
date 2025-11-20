@@ -244,7 +244,7 @@ export default function TemplateGenerator() {
     // Characters
     if (selectedCharacters.length > 0) {
       const chars = selectedCharacters
-        .map(id => characters.find(c => c.id === id))
+        .map(id => characters.find(c => String(c.id) === String(id)))
         .filter(Boolean)
 
       if (chars.length > 0) {
@@ -264,7 +264,7 @@ export default function TemplateGenerator() {
 
     // Events
     const selectedLibraryEvents = selectedEventIds
-      .map(id => eventLibrary.find(e => e.id === id))
+      .map(id => eventLibrary.find(e => String(e.id) === String(id)))
       .filter(Boolean)
 
     const validCustomEvents = customEvents.filter(e => e.trim())
