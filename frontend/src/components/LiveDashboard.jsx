@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Copy, Zap, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { parseNarrative } from '../utils/narrativeParser';
 import NarrativeInput from './NarrativeInput';
 import QuickSelect from './QuickSelect';
 import PromptPreview from './PromptPreview';
