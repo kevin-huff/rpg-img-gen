@@ -23,7 +23,15 @@ export default function NarrativeInput({
     // Debounce the parsing to avoid too many updates
     useEffect(() => {
         const timer = setTimeout(() => {
+            console.log('NarrativeInput: Parsing...', {
+                text: debouncedValue,
+                scenesCount: scenes.length,
+                charactersCount: characters.length,
+                eventsCount: events.length,
+                styleOptionsKeys: Object.keys(styleOptions)
+            });
             const result = parseNarrative(debouncedValue, scenes, characters, events, styleOptions);
+            console.log('NarrativeInput: Result', result);
             onParse(result);
         }, 500);
 

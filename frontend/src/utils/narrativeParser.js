@@ -110,15 +110,27 @@ export const parseNarrative = (text, availableScenes = [], availableCharacters =
     // --- Matching Logic ---
 
     // Sort items by name length (descending) to match longest phrases first
-    const sortedScenes = [...availableScenes].sort((a, b) => b.title.length - a.title.length);
-    const sortedCharacters = [...availableCharacters].sort((a, b) => b.name.length - a.name.length);
-    const sortedEvents = [...availableEvents].sort((a, b) => b.description.length - a.description.length);
+    // Safety check: ensure items have the required properties
+    const sortedScenes = [...availableScenes]
+        .filter(s => s && typeof s.title === 'string')
+        .sort((a, b) => b.title.length - a.title.length);
+
+    const sortedCharacters = [...availableCharacters]
+        .filter(c => c && typeof c.name === 'string')
+        .sort((a, b) => b.name.length - a.name.length);
+
+    const sortedEvents = [...availableEvents]
+        .filter(e => e && typeof e.description === 'string')
+        .sort((a, b) => b.description.length - a.description.length);
 
     // Helper for matching simple string arrays (Mood, Lighting, etc.)
     const findStyleMatch = (options, key) => {
-        if (!options) return;
+        if (!Array.isArray(options)) return;
         // Sort by length descending
-        const sortedOptions = [...options].sort((a, b) => b.length - a.length);
+        const sortedOptions = [...options]
+            .filter(opt => typeof opt === 'string')
+            .sort((a, b) => b.length - a.length);
+
         for (const option of sortedOptions) {
             if (fuzzyContains(remainingText, option)) {
                 matchedStyles[key] = option;
@@ -129,8 +141,10 @@ export const parseNarrative = (text, availableScenes = [], availableCharacters =
 
     // Helper for matching Presets (Label or Value)
     const findPresetMatch = (presets) => {
-        if (!presets) return;
+        if (!Array.isArray(presets)) return;
         for (const preset of presets) {
+            if (!preset || !preset.label || !preset.value) continue;
+
             // Check Label
             if (fuzzyContains(remainingText, preset.label)) {
                 matchedStyles.stylePreset = preset.value;
