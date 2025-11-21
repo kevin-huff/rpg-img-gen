@@ -332,23 +332,42 @@ export default function TemplateGenerator() {
     setPromptModifiers(prev => prev.filter(item => item !== tag))
   }
 
-  const onSubmit = async (data) => {
+  const onSubmit = async (data, overrides = {}) => {
     setIsGenerating(true)
     try {
+      // Merge overrides into the data used for generation
+      // Note: overrides might contain raw IDs or calculated values that differ from form state
+      const finalCharacterIds = overrides.characterIds || selectedCharacters
+      const finalEventIds = overrides.eventIds || selectedEventIds
+
+      // Styles from overrides should take precedence if present
+      const finalAiStyle = overrides.aiStyle !== undefined ? overrides.aiStyle : data.aiStyle
+      const finalStylePreset = overrides.stylePreset !== undefined ? overrides.stylePreset : data.stylePreset
+      const finalComposition = overrides.composition !== undefined ? overrides.composition : data.composition
+      const finalLighting = overrides.lighting !== undefined ? overrides.lighting : data.lighting
+      const finalMood = overrides.mood !== undefined ? overrides.mood : data.mood
+      const finalCamera = overrides.camera !== undefined ? overrides.camera : data.camera
+      const finalPostProcessing = overrides.postProcessing !== undefined ? overrides.postProcessing : data.postProcessing
+
+      // Scene ID override
+      const finalSceneId = overrides.sceneId !== undefined
+        ? (overrides.sceneId ? parseInt(overrides.sceneId) : null)
+        : (data.sceneId ? parseInt(data.sceneId) : null)
+
       const templateData = {
         title: data.title,
-        sceneId: data.sceneId ? parseInt(data.sceneId) : null,
-        characterIds: selectedCharacters,
-        eventIds: selectedEventIds,
+        sceneId: finalSceneId,
+        characterIds: finalCharacterIds,
+        eventIds: finalEventIds,
         eventDescriptions: customEvents.filter(event => event.trim()),
-        aiStyle: data.aiStyle,
-        stylePreset: data.stylePreset,
-        customPrompt: data.customPrompt,
-        composition: data.composition,
-        lighting: data.lighting,
-        mood: data.mood,
-        camera: data.camera,
-        postProcessing: data.postProcessing,
+        aiStyle: finalAiStyle,
+        stylePreset: finalStylePreset,
+        customPrompt: data.customPrompt, // We usually don't override this as it drives the parse
+        composition: finalComposition,
+        lighting: finalLighting,
+        mood: finalMood,
+        camera: finalCamera,
+        postProcessing: finalPostProcessing,
         modifiers: promptModifiers,
         characterPositions: characterPositions,
       }
@@ -467,7 +486,7 @@ export default function TemplateGenerator() {
                 stylePreset: watchedValues.stylePreset,
                 aiStyle: watchedValues.aiStyle
               }}
-              onGenerate={handleSubmit(onSubmit)}
+              onGenerate={(overrides) => handleSubmit((data) => onSubmit(data, overrides))()}
               isGenerating={isGenerating}
               generatedPreview={generatedPreview}
               onPreviewUpdate={(data) => {

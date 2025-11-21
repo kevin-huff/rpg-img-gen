@@ -93,7 +93,29 @@ export default function LiveDashboard({
         if (autoCopy) {
             copyToClipboard();
         }
-        onGenerate();
+
+        // Force a parse before generating to ensure we have the latest data
+        console.log('LiveDashboard: Force parsing before generation...');
+        const result = parseNarrative(narrative, scenes, characters, events, styleOptions);
+
+        // Update local state to reflect what we just parsed
+        handleParse(result);
+
+        // Construct overrides object
+        const overrides = {
+            sceneId: result.matchedSceneId,
+            // Merge matched characters with existing selection if desired, 
+            // or just use matched ones? 
+            // The current handleParse logic ADDS to selection.
+            // Let's mimic that logic here for the override.
+            characterIds: Array.from(new Set([...selectedCharacterIds, ...result.matchedCharacterIds])),
+            eventIds: Array.from(new Set([...selectedEventIds, ...result.matchedEventIds])),
+            ...selectedStyles, // Existing styles
+            ...result.matchedStyles // New styles from parse
+        };
+
+        console.log('LiveDashboard: Generating with overrides:', overrides);
+        onGenerate(overrides);
     };
 
     return (
