@@ -116,6 +116,9 @@ export default function LiveDashboard({
 
             {/* Center: Magic Box */}
             <div className="flex-shrink-0">
+                <div className="text-xs text-gray-400 mb-1">
+                    Debug: Scenes: {scenes.length}, Chars: {characters.length}, Events: {events.length}
+                </div>
                 <NarrativeInput
                     value={narrative}
                     onChange={setNarrative}
