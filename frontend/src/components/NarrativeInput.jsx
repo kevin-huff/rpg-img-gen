@@ -11,32 +11,28 @@ export default function NarrativeInput({
     styleOptions = {},
     className = ''
 }) {
-    const [debouncedValue, setDebouncedValue] = useState(value);
-
-    // Handle local change immediately
-    const handleChange = (e) => {
-        const text = e.target.value;
-        onChange(text);
-        setDebouncedValue(text);
-    };
-
     // Debounce the parsing to avoid too many updates
     useEffect(() => {
         const timer = setTimeout(() => {
             console.log('NarrativeInput: Parsing...', {
-                text: debouncedValue,
+                text: value,
                 scenesCount: scenes.length,
                 charactersCount: characters.length,
                 eventsCount: events.length,
                 styleOptionsKeys: Object.keys(styleOptions)
             });
-            const result = parseNarrative(debouncedValue, scenes, characters, events, styleOptions);
+            const result = parseNarrative(value, scenes, characters, events, styleOptions);
             console.log('NarrativeInput: Result', result);
             onParse(result);
         }, 500);
 
         return () => clearTimeout(timer);
-    }, [debouncedValue, scenes, characters, events, styleOptions, onParse]);
+    }, [value, scenes, characters, events, styleOptions, onParse]);
+
+    // Handle local change immediately
+    const handleChange = (e) => {
+        onChange(e.target.value);
+    };
 
     return (
         <div className={`relative ${className}`}>

@@ -471,6 +471,7 @@ export default function TemplateGenerator() {
               isGenerating={isGenerating}
               generatedPreview={generatedPreview}
               onPreviewUpdate={(data) => {
+                console.log('TemplateGenerator: Received update', data);
                 // Update form values from Live Dashboard
                 if (data.customPrompt !== undefined) setValue('customPrompt', data.customPrompt)
                 if (data.sceneId !== undefined) setValue('sceneId', data.sceneId)

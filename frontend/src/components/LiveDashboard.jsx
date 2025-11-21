@@ -25,7 +25,7 @@ export default function LiveDashboard({
     const [autoCopy, setAutoCopy] = useState(false);
 
     // Handle Narrative Parsing
-    const handleParse = (result) => {
+    const handleParse = React.useCallback((result) => {
         console.log('Magic Box Parse Result:', result);
         console.log('Available Scenes:', scenes.length);
         console.log('Available Characters:', characters.length);
@@ -56,10 +56,16 @@ export default function LiveDashboard({
         if (result.matchedStyles && Object.keys(result.matchedStyles).length > 0) {
             setSelectedStyles(prev => ({ ...prev, ...result.matchedStyles }));
         }
-    };
+    }, [scenes.length, characters.length]);
 
     // Update parent with current state for preview generation
     useEffect(() => {
+        console.log('LiveDashboard: Syncing to parent...', {
+            narrative,
+            sceneId: selectedSceneId,
+            characterIds: selectedCharacterIds,
+            eventIds: selectedEventIds
+        });
         onPreviewUpdate({
             customPrompt: narrative,
             sceneId: selectedSceneId,
