@@ -117,7 +117,19 @@ export default function LiveDashboard({
             {/* Center: Magic Box */}
             <div className="flex-shrink-0">
                 <div className="text-xs text-gray-400 mb-1">
-                    Debug: Scenes: {scenes.length}, Chars: {characters.length}, Events: {events.length}
+                    Debug: Scenes: {scenes.length}, Chars: {characters.length} ({characters[0]?.name}), Events: {events.length}
+                    <button
+                        onClick={() => {
+                            console.log('Manual Parse Triggered');
+                            const result = parseNarrative(narrative, scenes, characters, events, styleOptions);
+                            console.log('Manual Result:', result);
+                            alert(`Parsed: Chars=${result.matchedCharacterIds.length}, Scenes=${result.matchedSceneId ? 1 : 0}`);
+                            handleParse(result);
+                        }}
+                        className="ml-2 text-blue-500 hover:underline"
+                    >
+                        [Test Parse]
+                    </button>
                 </div>
                 <NarrativeInput
                     value={narrative}
