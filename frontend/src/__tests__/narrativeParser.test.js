@@ -1,4 +1,4 @@
-import { parseNarrative } from './narrativeParser.js';
+import { parseNarrative } from '../utils/narrativeParser.js';
 
 const mockScenes = [
     { id: 1, title: 'Tavern' },
