@@ -144,23 +144,6 @@ async function initializeDatabase() {
       is_active BOOLEAN DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (template_id) REFERENCES templates (id)
-    )`,
-
-    // Template usage tracking
-    `CREATE TABLE IF NOT EXISTS template_scenes (
-      template_id INTEGER,
-      scene_id INTEGER,
-      PRIMARY KEY (template_id, scene_id),
-      FOREIGN KEY (template_id) REFERENCES templates (id),
-      FOREIGN KEY (scene_id) REFERENCES scenes (id)
-    )`,
-
-    `CREATE TABLE IF NOT EXISTS template_characters (
-      template_id INTEGER,
-      character_id INTEGER,
-      PRIMARY KEY (template_id, character_id),
-      FOREIGN KEY (template_id) REFERENCES templates (id),
-      FOREIGN KEY (character_id) REFERENCES characters (id)
     )`
   ];
 

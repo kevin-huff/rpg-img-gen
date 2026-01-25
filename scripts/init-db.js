@@ -34,8 +34,6 @@ async function main() {
     console.log('- events')
     console.log('- templates')
     console.log('- images')
-    console.log('- template_scenes')
-    console.log('- template_characters')
 
     const eventCount = await getCount(db, 'events')
     console.log(`\n🎭 Event library entries: ${eventCount}`)
