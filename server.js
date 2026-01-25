@@ -121,15 +121,6 @@ if (process.env.NODE_ENV === 'production') {
 
 app.use(session(sessionConfig));
 
-// Remove debugging middleware after fixing the issue
-// Debug middleware for session tracking (only in production for now)
-// if (process.env.NODE_ENV === 'production') {
-//   app.use((req, res, next) => {
-//     console.log(`📊 ${req.method} ${req.path} - Session ID: ${req.sessionID} - User: ${req.session?.user?.username || 'None'}`);
-//     next();
-//   });
-// }
-
 // Railway-aware upload directory configuration
 let uploadDir = process.env.UPLOAD_DIR || './uploads';
 
