@@ -1,15 +1,20 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { Plus } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useSession } from '../contexts/SessionContext'
 import { scenesAPI } from '../services/api'
 
-export default function SceneSelector() {
+const SceneSelector = React.memo(function SceneSelector() {
   const { scenes, activeSceneId, setScene, refreshScenes } = useSession()
   const [showQuickAdd, setShowQuickAdd] = useState(false)
   const [newTitle, setNewTitle] = useState('')
   const [newDescription, setNewDescription] = useState('')
   const [creating, setCreating] = useState(false)
+
+  const activeScene = useMemo(
+    () => scenes.find(s => s.id === activeSceneId),
+    [scenes, activeSceneId]
+  )
 
   const handleQuickCreate = async () => {
     if (!newTitle.trim() || !newDescription.trim()) {
@@ -48,10 +53,11 @@ export default function SceneSelector() {
           value={activeSceneId || ''}
           onChange={(e) => setScene(e.target.value ? Number(e.target.value) : null)}
           className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-200 bg-white"
+          title={activeScene?.description || ''}
         >
           <option value="">Select scene...</option>
           {scenes.map((s) => (
-            <option key={s.id} value={s.id}>{s.title}</option>
+            <option key={s.id} value={s.id} title={s.description}>{s.title}</option>
           ))}
         </select>
         <button
@@ -63,6 +69,13 @@ export default function SceneSelector() {
           Quick Scene
         </button>
       </div>
+
+      {/* Scene description preview */}
+      {activeScene && (
+        <p className="mt-1 ml-12 text-xs text-gray-500 italic truncate" title={activeScene.description}>
+          {activeScene.description}
+        </p>
+      )}
 
       {showQuickAdd && (
         <div className="mt-2 p-3 bg-gray-50 border border-gray-200 rounded-lg space-y-2">
@@ -101,4 +114,6 @@ export default function SceneSelector() {
       )}
     </div>
   )
-}
+})
+
+export default SceneSelector

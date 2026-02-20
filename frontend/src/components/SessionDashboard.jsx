@@ -11,6 +11,7 @@ import RecentPromptsRail from './RecentPromptsRail'
 function DashboardContent() {
   const {
     assembledPrompt,
+    promptCharCount,
     generate,
     clearAction,
     clearOverrides,
@@ -117,9 +118,16 @@ function DashboardContent() {
 
         {/* Prompt preview */}
         <div>
-          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
-            Prompt Preview
-          </label>
+          <div className="flex items-center justify-between mb-1">
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              Prompt Preview
+            </label>
+            {promptCharCount > 0 && (
+              <span className={`text-xs tabular-nums ${promptCharCount > 1500 ? 'text-red-500 font-semibold' : promptCharCount > 1000 ? 'text-yellow-600' : 'text-gray-400'}`}>
+                {promptCharCount} chars
+              </span>
+            )}
+          </div>
           <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 font-mono text-sm text-gray-800 whitespace-pre-wrap min-h-[80px]">
             {assembledPrompt && assembledPrompt !== '.'
               ? assembledPrompt

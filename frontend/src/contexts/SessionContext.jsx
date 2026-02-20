@@ -29,8 +29,8 @@ const initialState = {
   scenes: [],
   activeSceneId: null,
 
-  // Action (hot path)
-  actionText: '',
+  // Action (hot path) — restored from localStorage draft
+  actionText: loadLocalStorage('session_actionDraft', ''),
 
   // Style overrides (per-shot)
   styleOverrides: {},
@@ -69,6 +69,7 @@ function reducer(state, action) {
     case 'SET_ACTIVE_SCENE':
       return { ...state, activeSceneId: action.payload }
     case 'SET_ACTION':
+      localStorage.setItem('session_actionDraft', JSON.stringify(action.payload))
       return { ...state, actionText: action.payload }
     case 'SET_STYLE_OVERRIDE':
       return {
@@ -98,8 +99,6 @@ function assemblePrompt(state) {
   const activeChars = state.characters.filter(c => state.activeCharacterIds.includes(c.id))
   const overrides = state.styleOverrides
 
-  const parts = []
-
   // Layer 1 + 5: Style (profile defaults merged with overrides)
   const stylePreset = overrides.style_preset || profile?.style_preset
   const composition = overrides.composition || profile?.composition
@@ -108,35 +107,54 @@ function assemblePrompt(state) {
   const camera = overrides.camera || profile?.camera
   const postProcessing = overrides.post_processing || profile?.post_processing
 
-  if (stylePreset) parts.push(stylePreset)
-  if (composition) parts.push(composition)
-  if (lighting) parts.push(lighting)
-  if (mood) parts.push(mood)
+  // Build flowing prose instead of period-separated segments
+  const fragments = []
 
-  // Layer 3: Scene
-  if (scene) {
-    parts.push(`Setting: ${scene.description}`)
+  // Style opening — comma-separated descriptors form the "art direction" header
+  const styleTokens = [stylePreset, composition].filter(Boolean)
+  if (styleTokens.length) fragments.push(styleTokens.join(', '))
+
+  // Atmosphere — lighting and mood joined naturally
+  if (lighting && mood) {
+    fragments.push(`${lighting} with ${mood}`)
+  } else if (lighting) {
+    fragments.push(lighting)
+  } else if (mood) {
+    fragments.push(mood)
   }
 
-  // Layer 2: Party characters
+  // Scene — flows as a setting sentence
+  if (scene) {
+    fragments.push(`Setting: ${scene.description}`)
+  }
+
+  // Characters — semicolon-separated within the same sentence
   if (activeChars.length > 0) {
     const charDescriptions = activeChars.map(c => {
       const desc = c.appearance || c.description
       return `${c.name}, ${desc}`
     })
-    parts.push(charDescriptions.join('; '))
+    fragments.push(charDescriptions.join('; '))
   }
 
-  // Layer 4: Action
+  // Action — the hot path, introduced naturally
   if (state.actionText.trim()) {
-    parts.push(state.actionText.trim())
+    fragments.push(state.actionText.trim())
   }
 
-  // Camera and post-processing at the end
-  if (camera) parts.push(`Camera: ${camera}`)
-  if (postProcessing) parts.push(postProcessing)
+  // Technical tail — camera and post-processing as comma-joined coda
+  const techTokens = []
+  if (camera) techTokens.push(`Camera: ${camera}`)
+  if (postProcessing) techTokens.push(postProcessing)
+  if (techTokens.length) fragments.push(techTokens.join(', '))
 
-  return parts.filter(Boolean).join('. ').replace(/\.\./g, '.') + '.'
+  if (fragments.length === 0) return ''
+
+  // Join with ". " but avoid double-periods from fragments that already end with punctuation
+  return fragments
+    .map(f => f.replace(/[.,;]+$/, '').trim())
+    .filter(Boolean)
+    .join('. ') + '.'
 }
 
 export function SessionProvider({ children }) {
@@ -292,11 +310,17 @@ export function SessionProvider({ children }) {
     dispatch({ type: 'SET_AUTO_COPY', payload: val })
   }, [])
 
-  const hasOverrides = Object.values(state.styleOverrides).some(v => v && v.trim())
+  const hasOverrides = useMemo(
+    () => Object.values(state.styleOverrides).some(v => v && v.trim()),
+    [state.styleOverrides]
+  )
+
+  const promptCharCount = assembledPrompt.length
 
   const value = {
     ...state,
     assembledPrompt,
+    promptCharCount,
     hasOverrides,
     setActiveProfile,
     toggleCharacter,

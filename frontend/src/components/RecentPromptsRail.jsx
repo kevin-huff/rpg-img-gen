@@ -12,7 +12,7 @@ function timeAgo(timestamp) {
   return `${Math.floor(hours / 24)}d ago`
 }
 
-export default function RecentPromptsRail() {
+const RecentPromptsRail = React.memo(function RecentPromptsRail() {
   const { recentPrompts, remixFromRecent } = useSession()
 
   if (recentPrompts.length === 0) return null
@@ -54,4 +54,6 @@ export default function RecentPromptsRail() {
       </div>
     </div>
   )
-}
+})
+
+export default RecentPromptsRail
