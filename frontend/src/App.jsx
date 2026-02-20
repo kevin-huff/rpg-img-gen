@@ -1,11 +1,12 @@
 import React, { useState } from 'react'
 import { Toaster } from 'react-hot-toast'
-import { FileImage, PenTool, Upload, Users, MapPin, LogOut, Sparkles } from 'lucide-react'
+import { FileImage, PenTool, Upload, Users, MapPin, LogOut, Sparkles, Zap } from 'lucide-react'
 
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { TemplateBuilderProvider } from './contexts/TemplateBuilderContext'
 import { getBaseUrl } from './utils/environment'
 import Login from './components/Login'
+import SessionDashboard from './components/SessionDashboard'
 import TemplateGenerator from './components/TemplateGenerator'
 import ImageUploader from './components/ImageUploader'
 import SceneManager from './components/SceneManager'
@@ -15,10 +16,11 @@ import ImageDropzone from './components/ImageDropzone'
 
 function AppContent() {
   const { user, authenticated, loading, login, logout } = useAuth()
-  const [currentTab, setCurrentTab] = useState('template')
+  const [currentTab, setCurrentTab] = useState('session')
 
   const navigation = [
-    { id: 'template', name: 'Template Generator', icon: PenTool, component: TemplateGenerator },
+    { id: 'session', name: 'Session Dashboard', icon: Zap, component: SessionDashboard },
+    { id: 'template', name: 'Builder (Classic)', icon: PenTool, component: TemplateGenerator },
     { id: 'scenes', name: 'Scenes', icon: MapPin, component: SceneManager },
     { id: 'characters', name: 'Characters', icon: Users, component: CharacterManager },
     { id: 'images', name: 'Image Uploader', icon: Upload, component: ImageUploader },

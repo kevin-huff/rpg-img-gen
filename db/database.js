@@ -84,6 +84,13 @@ async function runMigrations(dbInstance) {
     console.error('Error ensuring templates.input_snapshot column:', err.message);
     throw err;
   }
+
+  try {
+    await ensureColumn(dbInstance, 'templates', 'style_profile_id', 'INTEGER');
+  } catch (err) {
+    console.error('Error ensuring templates.style_profile_id column:', err.message);
+    throw err;
+  }
 }
 
 async function initializeDatabase() {
@@ -144,6 +151,22 @@ async function initializeDatabase() {
       is_active BOOLEAN DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (template_id) REFERENCES templates (id)
+    )`,
+
+    // Style profiles table
+    `CREATE TABLE IF NOT EXISTS style_profiles (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      style_preset TEXT DEFAULT '',
+      composition TEXT DEFAULT '',
+      lighting TEXT DEFAULT '',
+      mood TEXT DEFAULT '',
+      camera TEXT DEFAULT '',
+      post_processing TEXT DEFAULT '',
+      ai_style TEXT DEFAULT '',
+      is_default BOOLEAN DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`
   ];
 

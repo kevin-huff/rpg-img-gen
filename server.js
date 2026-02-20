@@ -18,6 +18,7 @@ if (process.env.NODE_ENV === 'production') {
 
 const { initializeDatabase } = require('./db/database');
 const { ensureEventLibrarySeeded } = require('./db/seedEvents');
+const { ensureStyleProfilesSeeded } = require('./db/seedStyleProfiles');
 const { initializeAuth, requireAuth } = require('./middleware/auth');
 const authRoutes = require('./routes/auth');
 const sceneRoutes = require('./routes/scenes');
@@ -25,6 +26,7 @@ const characterRoutes = require('./routes/characters');
 const templateRoutes = require('./routes/templates');
 const imageRoutes = require('./routes/images');
 const eventRoutes = require('./routes/events');
+const styleProfileRoutes = require('./routes/styleProfiles');
 
 const app = express();
 
@@ -153,6 +155,7 @@ app.use('/api/characters', requireAuth, characterRoutes);
 app.use('/api/templates', requireAuth, templateRoutes);
 app.use('/api/images', requireAuth, imageRoutes);
 app.use('/api/events', requireAuth, eventRoutes);
+app.use('/api/style-profiles', requireAuth, styleProfileRoutes);
 
 // Health check for Railway
 app.get('/health', (req, res) => {
@@ -226,6 +229,10 @@ async function startServer() {
     const seedResult = await ensureEventLibrarySeeded();
     if (seedResult?.needsRetry) {
       await ensureEventLibrarySeeded();
+    }
+    const styleSeedResult = await ensureStyleProfilesSeeded();
+    if (styleSeedResult?.needsRetry) {
+      await ensureStyleProfilesSeeded();
     }
     await initializeAuth();
     console.log('Database and authentication initialized successfully');

@@ -80,6 +80,16 @@ export const imagesAPI = {
   delete: (id) => api.delete(`/images/${id}`),
 }
 
+// Style Profiles API
+export const styleProfilesAPI = {
+  getAll: () => api.get('/style-profiles'),
+  getById: (id) => api.get(`/style-profiles/${id}`),
+  create: (data) => api.post('/style-profiles', data),
+  update: (id, data) => api.put(`/style-profiles/${id}`, data),
+  delete: (id) => api.delete(`/style-profiles/${id}`),
+  setDefault: (id) => api.put(`/style-profiles/${id}/set-default`),
+}
+
 // Health check
 export const healthAPI = {
   check: () => api.get('/health'),
